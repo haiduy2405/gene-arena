@@ -95,6 +95,31 @@
   #log .g{color:#f1c453}#log .d{color:#ff7a7a}#log .h{color:#6fe39a}#log .e{color:#fff;font-weight:700}#log .x{color:#8b98ad}
   .hint{font-size:11px;color:#6d7a90;margin-top:6px}
 
+  /* ---- Gene ---- */
+  .gcard{background:#1d2433;border:2px solid #3a4560;border-radius:8px;padding:8px;font-size:12px;cursor:pointer;text-align:left;position:relative}
+  .gcard:hover{background:#26304a}
+  .gcard .gn{font-weight:700;font-size:13px}
+  .gcard .rar{font-size:10px;margin-left:6px;opacity:.9}
+  .gcard .ds{color:#b9c4d6;margin-top:3px;line-height:1.35}
+  .r-common{border-color:#4a5a7a}.r-common .gn{color:#cfe0ff}
+  .r-rare{border-color:#e8c26a}.r-rare .gn{color:#f1c453}
+  .r-cursed{border-color:#a044d6}.r-cursed .gn{color:#d58cff}
+  .gcard.picked{outline:3px solid #6fe39a}
+  #geneReward{border-color:#e8c26a;background:#1a1810}
+  #geneReward .opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px}
+  #stash{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .gslot{min-height:46px;border:1px dashed #343c52;border-radius:8px;padding:4px 6px;font-size:12px;display:flex;align-items:center;justify-content:center;text-align:center;color:#6d7a90}
+  .gslot.has{border-style:solid;cursor:pointer;color:#fff;font-weight:600}
+  .gslot.has.sel{outline:3px solid #ffd23f}
+  .ulist{margin-top:6px;display:flex;flex-direction:column;gap:4px}
+  .urow{display:flex;gap:6px;align-items:flex-start;font-size:12px;border:1px solid #2c3750;border-radius:6px;padding:4px 6px}
+  .urow .t{flex:1}
+  .urow button{padding:2px 8px;font-size:12px;margin:0}
+  #modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:50;padding:10px}
+  #modal .box{background:#161b26;border:2px solid #2f6df6;border-radius:12px;padding:14px;max-width:560px;width:100%;max-height:90vh;overflow:auto}
+  #modal h3{margin:0 0 8px}
+  #modal .opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin-bottom:10px}
+
   /* ---- Kết thúc run ---- */
   #endScr h2{margin:0 0 6px;font-size:24px}
   .endrow{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
@@ -103,7 +128,7 @@
 </head>
 <body>
 <div id="app">
-  <h1>GENE ARENA <small>v0.1 · M3</small></h1>
+  <h1>GENE ARENA <small>v0.1 · M4</small></h1>
 
   <!-- ============ MÀN HÌNH CHÍNH ============ -->
   <section id="titleScr" class="panel">
@@ -111,7 +136,7 @@
       <label>Seed run (bỏ trống = ngẫu nhiên)<input id="inRunSeed" type="number" placeholder="ngẫu nhiên"></label>
       <button id="btnNewRun" class="primary">▶ Run mới</button>
     </div>
-    <p class="muted">15 ải · 5 mạng · 10 vàng đầu run. Mua quân, xếp đội, gộp 3 quân cùng loại + cùng sao thành sao cao hơn. Gene, luật thế giới, nhiệm vụ phụ có ở các mốc sau.</p>
+    <p class="muted">15 ải · 5 mạng · 10 vàng đầu run. Mua quân, xếp đội, gộp 3 quân cùng loại + cùng sao thành sao cao hơn. Sau mỗi trận chọn gene thưởng, gắn tối đa 2 gene/quân. Luật thế giới, nhiệm vụ phụ, chợ đen có ở mốc sau.</p>
     <details>
       <summary>Trận thử (dev) — đội cố định, chọn ải / luật / seed</summary>
       <div class="setup">
@@ -138,8 +163,12 @@
         <div id="toast"></div>
       </div>
       <div class="panel" style="flex:1 1 380px;min-width:0">
+        <div id="geneReward" class="panel" hidden></div>
         <div class="ttl"><b>Shop</b> <span class="muted">mua 3🪙 · bán 2/5/9🪙</span> <button id="btnReroll">🔄 Làm mới (1🪙)</button></div>
         <div id="shop"></div>
+        <div class="ttl" style="margin-top:12px"><b>Kho gene</b> <span id="stashCnt" class="muted"></span> <span class="muted">chạm gene → chạm quân để gắn</span></div>
+        <div id="stash"></div>
+        <div id="ginfo" class="muted" style="min-height:20px;margin-top:6px"></div>
         <div class="ttl" style="margin-top:12px"><b id="enemyTtl">Địch</b> <span class="muted" id="enemyNote"></span></div>
         <div class="chips" id="enemyPrev"></div>
         <button id="btnStart" class="primary big">⚔ Bắt đầu trận</button>
@@ -197,6 +226,8 @@ let mode = 'run';        // 'run' | 'dev' (trận thử)
 let cur = 'titleScr';
 let sel = null;          // quân đang chọn trong màn chuẩn bị: pos
 let dragSrc = null;
+let selG = null;         // gene đang chọn trong kho (chỉ số) hoặc null
+const RAR_VI = { common: 'Thường', rare: 'Hiếm', cursed: 'Nguyền rủa' };
 
 function show(id) {
   cur = id;
@@ -225,7 +256,7 @@ function toast(msg, good) { const t = $('toast'); t.textContent = msg || ''; t.c
 $('btnNewRun').onclick = () => {
   const v = $('inRunSeed').value;
   run = newRun(v === '' ? undefined : parseInt(v, 10));
-  sel = null; toast('');
+  sel = null; selG = null; toast('');
   showPrep();
 };
 $('btnAgain').onclick = () => { show('titleScr'); };
@@ -256,6 +287,11 @@ function slotEl(pos) {
 }
 function clickSlot(pos) {
   const u = getAt(run, pos);
+  if (selG !== null) {   // đang cầm gene từ kho: chạm quân để gắn, chạm ô trống để hủy
+    if (u) { const r = attachGene(run, selG, pos); selG = null; toast(r.ok ? 'Đã gắn gene' : r.msg, r.ok); sel = r.ok ? pos : sel; }
+    else selG = null;
+    renderPrep(); return;
+  }
   if (!sel) { if (u) { sel = pos; renderPrep(); } return; }
   if (samePos(sel, pos)) { sel = null; renderPrep(); return; }
   doMove(sel, pos);
@@ -283,9 +319,10 @@ function renderPrep() {
   for (let y = 0; y < CONFIG.ROWS; y++) for (let x = 0; x <= CONFIG.PLAYER_COLS[1]; x++) board.appendChild(slotEl({ zone: 'field', x, y }));
   const bench = $('bench'); bench.innerHTML = '';
   for (let i = 0; i < ECONOMY.BENCH_SIZE; i++) bench.appendChild(slotEl({ zone: 'bench', i }));
-  renderInfo(); renderShop(); renderEnemy();
-  $('btnStart').disabled = fc === 0;
-  $('btnStart').textContent = fc === 0 ? 'Cần ít nhất 1 quân trên sân' : '⚔ Bắt đầu trận ải ' + w;
+  renderInfo(); renderShop(); renderEnemy(); renderGeneReward(); renderStash(); renderMerge();
+  const busy = runBusy(run);
+  $('btnStart').disabled = fc === 0 || busy;
+  $('btnStart').textContent = fc === 0 ? 'Cần ít nhất 1 quân trên sân' : busy ? 'Chọn gene thưởng trước (hoặc bỏ qua)' : '⚔ Bắt đầu trận ải ' + w;
   $('btnReroll').disabled = run.gold < ECONOMY.REROLL_COST;
 }
 
@@ -296,10 +333,19 @@ function renderInfo() {
   box.innerHTML = '<h3>' + TYPE_ICON[u.type] + ' ' + st.name + ' ' + '★'.repeat(u.star) + '</h3>' +
     '<div class="stats">HP <b>' + st.hp + '</b> · ATK <b>' + st.atk + '</b> · đánh mỗi ' + st.cd + 's · tầm ' + st.range + '</div>' +
     '<div class="stats">' + esc(st.note) + '</div>' +
-    '<div class="stats">Gene: ' + (u.genes.length ? u.genes.map(g => '<b>' + esc(GENE_BY_ID[g].name) + '</b>').join(', ') : 'chưa có') +
-    (u.shards.length ? ' · mảnh ký ức ' + u.shards.length : '') + '</div>';
+    '<div class="stats">Gene (' + u.genes.length + '/' + CONFIG.MAX_GENES_PER_UNIT + ')' + (u.shards.length ? ' · mảnh ký ức ' + u.shards.length : '') + '</div>';
+  const ul = document.createElement('div'); ul.className = 'ulist';
+  u.genes.forEach((gid, gi) => {
+    const g = GENE_BY_ID[gid], row = document.createElement('div'); row.className = 'urow r-' + g.rarity; row.style.borderColor = '';
+    row.innerHTML = '<div class="t"><b class="gn">' + esc(g.name) + '</b> <span class="muted">' + RAR_VI[g.rarity] + '</span><br>' + esc(g.desc) + '</div>';
+    const b2 = document.createElement('button'); b2.textContent = 'Gỡ';
+    b2.onclick = () => { const r = detachGene(run, sel, gi); toast(r.ok ? '' : r.msg); renderPrep(); };
+    row.appendChild(b2); ul.appendChild(row);
+  });
+  if (!u.genes.length) ul.innerHTML = '<span class="muted">Chưa có gene. Chạm gene trong kho để gắn.</span>';
+  box.appendChild(ul);
   const b = document.createElement('button'); b.className = 'danger'; b.textContent = 'Bán +' + price + '🪙';
-  b.onclick = () => { const r = sellUnit(run, sel); sel = null; toast(r.ok ? 'Đã bán +' + r.price + '🪙' : r.msg, r.ok); renderPrep(); };
+  b.onclick = () => { const r = sellUnit(run, sel); sel = null; toast(r.ok ? 'Đã bán +' + r.price + '🪙' + (r.lost ? ' (mất ' + r.lost + ' gene vì kho đầy)' : '') : r.msg, r.ok); renderPrep(); };
   box.appendChild(b);
 }
 
@@ -350,6 +396,84 @@ $('btnStart').onclick = () => {
   startReplay(res);
 };
 
+// ======================= GENE UI (M4) =======================
+function geneCard(gid, extra) {
+  const g = GENE_BY_ID[gid], d = document.createElement('div');
+  d.className = 'gcard r-' + g.rarity + (extra || '');
+  d.innerHTML = '<span class="gn">' + esc(g.name) + '</span><span class="rar">' + RAR_VI[g.rarity] + '</span><div class="ds">' + esc(g.desc) + '</div>';
+  return d;
+}
+function renderGeneReward() {
+  const box = $('geneReward'), gc = run.geneChoice;
+  if (!gc) { box.hidden = true; return; }
+  box.hidden = false; box.innerHTML = '';
+  const t = document.createElement('div'); t.className = 'ttl';
+  t.innerHTML = '<b>🎁 Phần thưởng gene — chọn 1 trong ' + gc.options.length + '</b>';
+  const rr = document.createElement('button'); rr.textContent = '🔄 Đổi 3 gene mới (' + ECONOMY.GENE_REROLL_COST + '🪙)';
+  rr.disabled = gc.rerolled || run.gold < ECONOMY.GENE_REROLL_COST; if (gc.rerolled) rr.textContent = 'Đã đổi lần này';
+  rr.onclick = () => { const r = rerollGeneChoice(run); toast(r.ok ? '' : r.msg); renderPrep(); };
+  const sk = document.createElement('button'); sk.textContent = 'Bỏ qua'; sk.onclick = () => { skipGene(run); renderPrep(); };
+  t.appendChild(rr); t.appendChild(sk); box.appendChild(t);
+  const opts = document.createElement('div'); opts.className = 'opts';
+  gc.options.forEach((gid, i) => {
+    const c = geneCard(gid);
+    c.onclick = () => { const r = pickGene(run, i); toast(r.ok ? 'Đã nhận gene vào kho' : r.msg, r.ok); renderPrep(); };
+    opts.appendChild(c);
+  });
+  box.appendChild(opts);
+  if (run.stash.length >= ECONOMY.GENE_STASH_MAX) { const w = document.createElement('div'); w.className = 'muted'; w.style.color = '#ff9c9c'; w.textContent = 'Kho gene đầy — gắn hoặc bán bớt gene để nhận gene mới.'; box.appendChild(w); }
+}
+function renderStash() {
+  const box = $('stash'); box.innerHTML = '';
+  $('stashCnt').textContent = '(' + run.stash.length + '/' + ECONOMY.GENE_STASH_MAX + ')';
+  for (let i = 0; i < ECONOMY.GENE_STASH_MAX; i++) {
+    const gid = run.stash[i], d = document.createElement('div');
+    if (!gid) { d.className = 'gslot'; d.textContent = '·'; box.appendChild(d); continue; }
+    const g = GENE_BY_ID[gid];
+    d.className = 'gslot has r-' + g.rarity + (selG === i ? ' sel' : ''); d.style.borderWidth = '2px'; d.style.borderStyle = 'solid';
+    d.textContent = g.name; d.title = g.desc;
+    d.onclick = () => {
+      if (sel && getAt(run, sel)) { const r = attachGene(run, i, sel); toast(r.ok ? 'Đã gắn gene' : r.msg, r.ok); selG = null; }
+      else selG = (selG === i ? null : i);
+      renderPrep();
+    };
+    box.appendChild(d);
+  }
+  const gi = $('ginfo'); gi.innerHTML = '';
+  if (selG !== null && run.stash[selG]) {
+    const g = GENE_BY_ID[run.stash[selG]];
+    gi.innerHTML = '<b class="r-' + g.rarity + '" style="border:0"><span class="gn">' + esc(g.name) + '</span></b> <span class="muted">' + RAR_VI[g.rarity] + '</span> — ' + esc(g.desc) + ' <span class="muted">(chạm 1 quân để gắn)</span> ';
+    const b = document.createElement('button'); b.className = 'danger'; b.textContent = 'Bán +' + ECONOMY.SELL_GENE + '🪙';
+    b.onclick = () => { sellGene(run, selG); selG = null; renderPrep(); };
+    gi.appendChild(b);
+  } else selG = null;
+}
+// Hộp chọn gene khi gộp sao (tối đa 2 gene giữ lại; gene bỏ về kho nếu còn chỗ)
+let mergeSel = null;
+function renderMerge() {
+  const m = $('modal');
+  if (!run.mergeQueue.length) { m.hidden = true; mergeSel = null; return; }
+  const item = run.mergeQueue[0];
+  if (!mergeSel || mergeSel.key !== run.mergeQueue.length + ':' + item.uid) mergeSel = { key: run.mergeQueue.length + ':' + item.uid, keep: item.pool.map((_, i) => i).slice(0, CONFIG.MAX_GENES_PER_UNIT) };
+  m.hidden = false; m.innerHTML = '';
+  const box = document.createElement('div'); box.className = 'box';
+  box.innerHTML = '<h3>✨ Gộp sao — chọn tối đa ' + CONFIG.MAX_GENES_PER_UNIT + ' gene giữ lại</h3><p class="muted">Gene không chọn sẽ về kho gene (nếu kho còn chỗ, hết chỗ thì mất).</p>';
+  const opts = document.createElement('div'); opts.className = 'opts';
+  item.pool.forEach((gid, i) => {
+    const c = geneCard(gid, mergeSel.keep.includes(i) ? ' picked' : '');
+    c.onclick = () => {
+      const k = mergeSel.keep, at = k.indexOf(i);
+      if (at >= 0) k.splice(at, 1); else if (k.length < CONFIG.MAX_GENES_PER_UNIT) k.push(i);
+      renderMerge();
+    };
+    opts.appendChild(c);
+  });
+  box.appendChild(opts);
+  const ok = document.createElement('button'); ok.className = 'primary'; ok.textContent = 'Xác nhận (' + mergeSel.keep.length + '/' + CONFIG.MAX_GENES_PER_UNIT + ')';
+  ok.onclick = () => { const r = resolveMerge(run, mergeSel.keep); mergeSel = null; toast(r.lost ? 'Mất ' + r.lost + ' gene vì kho đầy' : ''); renderPrep(); };
+  box.appendChild(ok); m.appendChild(box);
+}
+
 // ======================= KẾT THÚC RUN =======================
 function showEnd() {
   show('endScr');
@@ -357,12 +481,12 @@ function showEnd() {
   $('endTitle').textContent = won ? '🏆 THẮNG RUN!' : '💀 THUA RUN';
   $('endTitle').style.color = won ? '#3ecf6e' : '#ef4444';
   const units = listUnits(run).map(e => e.unit);
-  const genes = []; units.forEach(u => u.genes.forEach(g => genes.push(GENE_BY_ID[g].name)));
+  const genes = []; units.forEach(u => u.genes.forEach(g => genes.push(GENE_BY_ID[g].name + ' (trên ' + UNITS[u.type].name + ')'))); run.stash.forEach(g => genes.push(GENE_BY_ID[g].name + ' (trong kho)'));
   $('endBody').innerHTML =
     '<p>Ải đạt được: <b>' + run.wave + '</b>/' + ECONOMY.TOTAL_WAVES + ' · trận thắng: <b>' + run.wins + '</b>/' + run.history.length + ' · mạng còn: <b>' + Math.max(0, run.lives) + '</b> · seed ' + run.seed + '</p>' +
     '<div class="ttl"><b>Đội hình cuối</b></div><div class="endrow chips">' +
     (units.length ? units.map(u => '<span class="chip">' + TYPE_ICON[u.type] + ' ' + UNITS[u.type].name + ' ' + '★'.repeat(u.star) + '</span>').join('') : '<span class="muted">không còn quân</span>') + '</div>' +
-    '<div class="ttl"><b>Gene</b></div><div class="muted">' + (genes.length ? esc(genes.join(', ')) : 'chưa có (gene ra mắt ở M4)') + '</div>';
+    '<div class="ttl"><b>Gene</b></div><div class="muted">' + (genes.length ? esc(genes.join(', ')) : 'không có gene') + '</div>';
 }
 
 // ======================= RENDER / PHÁT LẠI TRẬN (M2) =======================
@@ -594,5 +718,6 @@ function frame(now) {
 }
 requestAnimationFrame(frame);
 </script>
+<div id="modal" hidden></div>
 </body>
 </html>

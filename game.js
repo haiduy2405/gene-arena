@@ -589,7 +589,8 @@ function defsSortedByRole(defs) {
 // unit = { uid, type, star, genes:[], shards:[] }
 // Quy ước đơn giản hóa: shop tự làm mới MIỄN PHÍ mỗi ải; thu nhập nhận sau mỗi trận (cả thắng lẫn thua);
 // chuỗi thắng >=5 => +4, 3-4 => +2; thua ải 15 khi còn mạng => đánh lại ải 15; ghế đầy chỉ mua được nếu gộp ngay;
-// gộp sao: giữ tối đa 2 gene đầu tiên (hộp chọn gene khi gộp làm ở M4).
+// gộp sao: nếu tổng gene > 2 thì xếp vào run.mergeQueue để người chơi chọn tối đa 2 gene giữ lại (gene không chọn về kho nếu còn chỗ, hết chỗ thì mất);
+// bán quân: gene trên quân về kho (hết chỗ thì mất). Gene thưởng sau trận: chọn 1/3 (thua: 1/2), đổi 2 vàng 1 lần/ải.
 const fKey = (x, y) => x + ',' + y;
 function runRand(run) { run.rngN++; return mulberry32((run.seed ^ Math.imul(run.rngN, 2654435761)) >>> 0)(); }   // RNG của run, lưu được bằng (seed, rngN)
 function fieldLimit(wave) { let n = 6; for (const f of ECONOMY.FIELD_SIZE) if (wave >= f.fromWave) n = f.size; return n; }
@@ -597,7 +598,8 @@ function isBossWave(w) { return ECONOMY.BOSS_WAVES.includes(w); }
 function newRun(seed) {
   seed = (seed === undefined ? Math.floor(Math.random() * 1e9) : seed) >>> 0;
   const run = { seed, rngN: 0, wave: 1, gold: ECONOMY.START_GOLD, lives: ECONOMY.START_LIVES, streak: 0, wins: 0, over: null,
-    nextUid: 1, field: {}, bench: new Array(ECONOMY.BENCH_SIZE).fill(null), shop: [], history: [] };
+    nextUid: 1, field: {}, bench: new Array(ECONOMY.BENCH_SIZE).fill(null), shop: [], history: [],
+    stash: [], geneChoice: null, mergeQueue: [] };
   rollShop(run);
   return run;
 }
@@ -642,9 +644,10 @@ function mergeOnce(run) {
   for (const type of Object.keys(UNITS)) for (let star = 1; star < 3; star++) {
     const list = listUnits(run).filter(e => e.unit.type === type && e.unit.star === star);
     if (list.length < 3) continue;
-    const three = list.slice(0, 3), genes = [], shards = [];
-    three.forEach(e => { genes.push(...e.unit.genes); shards.push(...e.unit.shards); });
-    const nu = { uid: run.nextUid++, type, star: star + 1, genes: genes.slice(0, CONFIG.MAX_GENES_PER_UNIT), shards: shards.slice(0, CONFIG.MEMORY_MAX) };
+    const three = list.slice(0, 3), pool = [], shards = [];
+    three.forEach(e => { pool.push(...e.unit.genes); shards.push(...e.unit.shards); });
+    const nu = { uid: run.nextUid++, type, star: star + 1, genes: pool.slice(0, CONFIG.MAX_GENES_PER_UNIT), shards: shards.slice(0, CONFIG.MEMORY_MAX) };
+    if (pool.length > CONFIG.MAX_GENES_PER_UNIT) run.mergeQueue.push({ uid: nu.uid, pool });   // chờ người chơi chọn
     three.forEach(e => setAt(run, e, null));
     setAt(run, three[0], nu);   // đặt tại vị trí quân đầu tiên (ưu tiên quân ở sân)
     return { type, star: star + 1 };
@@ -672,7 +675,9 @@ function sellUnit(run, pos) {
   if (!u) return { ok: false, msg: 'Ô trống' };
   const price = ECONOMY.SELL_UNIT[u.star];
   run.gold += price; setAt(run, pos, null);
-  return { ok: true, price };
+  let lost = 0;
+  for (const g of u.genes) { if (run.stash.length < ECONOMY.GENE_STASH_MAX) run.stash.push(g); else lost++; }   // gene trên quân về kho
+  return { ok: true, price, lost };
 }
 const enemyForWave = run => generateEnemy(run.wave, mulberry32(run.seed * 7919 + run.wave));
 const battleSeed = run => (run.seed * 31 + run.wave) >>> 0;
@@ -692,9 +697,85 @@ function applyBattleResult(run, res) {
   run.lives -= loss;
   if (run.lives <= 0) run.over = 'lose';
   else if (win && wave >= ECONOMY.TOTAL_WAVES) run.over = 'win';
-  else { if (wave < ECONOMY.TOTAL_WAVES) run.wave++; rollShop(run); }   // thua ải 15 còn mạng: đánh lại ải 15
+  else {
+    if (wave < ECONOMY.TOTAL_WAVES) run.wave++;   // thua ải 15 còn mạng: đánh lại ải 15
+    rollShop(run);
+    run.geneChoice = { options: rollGeneChoices(run, wave, win ? ECONOMY.GENE_CHOICES_WIN : ECONOMY.GENE_CHOICES_LOSE), rerolled: false, wave, count: win ? ECONOMY.GENE_CHOICES_WIN : ECONOMY.GENE_CHOICES_LOSE };
+  }
   return { win, wave, income, bonus, loss, streak: run.streak, over: run.over };
 }
+
+
+// ======================= GENE TRONG RUN (M4) =======================
+// Gene thưởng, kho gene, gắn/gỡ/bán gene, chọn gene khi gộp sao. Gene tự chạy qua engine chung ở simulateBattle
+// (fire/applyEffect) — ở đây chỉ quản lý việc sở hữu gene, KHÔNG có code riêng cho từng gene.
+function geneRarityWeights(wave) { let w = GENE_RARITY_BY_WAVE[0].w; for (const r of GENE_RARITY_BY_WAVE) if (wave >= r.fromWave) w = r.w; return w; }
+// Bốc n gene khác nhau theo tỉ lệ độ hiếm của ải. Hết gene trong nhóm hiếm đã bốc thì lấy nhóm khác.
+function rollGeneChoices(run, wave, n, forceRarity) {
+  const w = geneRarityWeights(wave), keys = Object.keys(w), out = [];
+  for (let i = 0; i < n; i++) {
+    let r = forceRarity;
+    if (!r) {
+      let t = runRand(run) * keys.reduce((a, k) => a + w[k], 0);
+      r = keys[keys.length - 1];
+      for (const k of keys) { t -= w[k]; if (t < 0) { r = k; break; } }
+    }
+    let pool = GENES_BY_RARITY[r].filter(g => !out.includes(g.id));
+    if (!pool.length) pool = GENES.filter(g => !out.includes(g.id));
+    out.push(pool[Math.floor(runRand(run) * pool.length)].id);
+  }
+  return out;
+}
+function pickGene(run, idx) {
+  const gc = run.geneChoice;
+  if (!gc || !gc.options[idx]) return { ok: false, msg: 'Không có gene để chọn' };
+  if (run.stash.length >= ECONOMY.GENE_STASH_MAX) return { ok: false, msg: 'Kho gene đầy (' + ECONOMY.GENE_STASH_MAX + '): gắn hoặc bán bớt gene trước' };
+  run.stash.push(gc.options[idx]); run.geneChoice = null;
+  return { ok: true };
+}
+function skipGene(run) { run.geneChoice = null; return { ok: true }; }
+function rerollGeneChoice(run) {
+  const gc = run.geneChoice;
+  if (!gc) return { ok: false, msg: 'Không có lựa chọn gene' };
+  if (gc.rerolled) return { ok: false, msg: 'Chỉ đổi được 1 lần mỗi ải' };
+  if (run.gold < ECONOMY.GENE_REROLL_COST) return { ok: false, msg: 'Không đủ vàng' };
+  run.gold -= ECONOMY.GENE_REROLL_COST; gc.rerolled = true;
+  gc.options = rollGeneChoices(run, gc.wave, gc.count);
+  return { ok: true };
+}
+function attachGene(run, stashIdx, pos) {
+  const g = run.stash[stashIdx], u = getAt(run, pos);
+  if (!g) return { ok: false, msg: 'Chưa chọn gene' };
+  if (!u) return { ok: false, msg: 'Ô trống' };
+  if (u.genes.length >= CONFIG.MAX_GENES_PER_UNIT) return { ok: false, msg: 'Quân đã đủ ' + CONFIG.MAX_GENES_PER_UNIT + ' gene — gỡ bớt trước' };
+  u.genes.push(g); run.stash.splice(stashIdx, 1);
+  return { ok: true };
+}
+function detachGene(run, pos, geneIdx) {
+  const u = getAt(run, pos);
+  if (!u || !u.genes[geneIdx]) return { ok: false, msg: 'Không có gene' };
+  if (run.stash.length >= ECONOMY.GENE_STASH_MAX) return { ok: false, msg: 'Kho gene đầy' };
+  run.stash.push(u.genes.splice(geneIdx, 1)[0]);
+  return { ok: true };
+}
+function sellGene(run, stashIdx) {
+  if (!run.stash[stashIdx]) return { ok: false, msg: 'Không có gene' };
+  run.stash.splice(stashIdx, 1); run.gold += ECONOMY.SELL_GENE;
+  return { ok: true, price: ECONOMY.SELL_GENE };
+}
+// Xử lý 1 mục chờ trong mergeQueue: keepIdx = chỉ số (trong item.pool) các gene giữ lại (tối đa 2)
+function resolveMerge(run, keepIdx) {
+  const item = run.mergeQueue.shift();
+  if (!item) return { ok: false, msg: 'Không có gì để chọn' };
+  const keep = [...new Set(keepIdx)].filter(i => i >= 0 && i < item.pool.length).slice(0, CONFIG.MAX_GENES_PER_UNIT);
+  const e = listUnits(run).find(x => x.unit.uid === item.uid);
+  if (e) e.unit.genes = keep.map(i => item.pool[i]);
+  let lost = 0;
+  item.pool.forEach((g, i) => { if (keep.includes(i)) return; if (run.stash.length < ECONOMY.GENE_STASH_MAX) run.stash.push(g); else lost++; });
+  return { ok: true, lost };
+}
+// Chặn bắt đầu trận khi còn việc dở (chọn gene thưởng / chọn gene khi gộp)
+const runBusy = run => !!run.geneChoice || run.mergeQueue.length > 0;
 
 // ======================= DEMO (console) =======================
 // Mở index.html -> F12 -> demoBattle(1, 3)  hoặc demoBattle(seed, wave, ruleId, verbose)
