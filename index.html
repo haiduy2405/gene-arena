@@ -2,265 +2,399 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GENE ARENA v0.1</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#090b0f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gene Arena">
+<meta name="format-detection" content="telephone=no">
+<title>GENE ARENA</title>
 <style>
-  *{box-sizing:border-box}
-  [hidden]{display:none!important}
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0e1117;color:#dfe6f0;line-height:1.4}
-  #app{max-width:1180px;margin:0 auto;padding:10px}
-  h1{font-size:18px;margin:4px 0 8px;letter-spacing:1px}
-  h1 small{font-weight:400;color:#7d8aa0;font-size:12px;margin-left:6px}
-  .panel{background:#161b26;border:1px solid #232b3b;border-radius:10px;padding:10px;margin-bottom:10px}
-  .ttl{font-size:12px;color:#8b98ad;margin:2px 0 6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .ttl b{color:#dfe6f0}
-  .muted{color:#6d7a90;font-size:11px}
-  .setup{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
-  .setup label{display:flex;flex-direction:column;font-size:11px;color:#8b98ad;gap:3px}
-  select,input,button{font:inherit;font-size:14px;background:#1d2433;color:#dfe6f0;border:1px solid #2c3750;border-radius:7px;padding:7px 10px}
-  input[type=number]{width:120px}
-  button{cursor:pointer}
-  button:hover:not(:disabled){background:#26304a}
-  button:disabled{opacity:.4;cursor:not-allowed}
-  button.primary{background:#2f6df6;border-color:#2f6df6;color:#fff;font-weight:600}
-  button.primary:hover:not(:disabled){background:#4a82ff}
-  button.big{width:100%;padding:12px;font-size:16px;margin-top:8px}
-  button.on{background:#2f6df6;border-color:#2f6df6;color:#fff}
-  button.danger{border-color:#7a2d2d;color:#ff9c9c}
-  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}
-  details{margin-top:12px;color:#8b98ad;font-size:13px}
-  details summary{cursor:pointer;margin-bottom:8px}
+:root{
+  --bg:#090b0f;--bg2:#0f1218;--surf:#151922;--surf2:#1b2030;--surf3:#232a3c;
+  --line:rgba(255,255,255,.07);--line2:rgba(255,255,255,.13);
+  --tx:#e8ebf1;--tx2:#97a1b5;--tx3:#5f6a7e;
+  --gold:#d6a84b;--gold2:#efc977;--red:#d4574f;--grn:#4fbf83;--blue:#5b8def;--vio:#a77bdc;
+  --c-common:#c5d3ec;--c-rare:#efc977;--c-cursed:#c08af0;
+  --t-tank:#4c7ea6;--t-fighter:#b4614c;--t-archer:#5d9a64;--t-mage:#8a6dc2;--t-healer:#3e9f98;--t-assassin:#b04a69;
+  --r:12px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+input,textarea{-webkit-user-select:text;user-select:text}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:manipulation;background:var(--bg);color:var(--tx);
+  font-family:"Inter","SF Pro Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+body{position:fixed;inset:0;background:radial-gradient(120% 80% at 50% -10%,#141a27 0%,var(--bg) 60%)}
+#app{position:absolute;inset:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.scr{position:absolute;inset:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);display:flex;flex-direction:column;min-height:0}
+.scroll-y{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+svg.i{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:-.14em}
+svg.i.fill{fill:currentColor;stroke:none}
 
-  /* ---- HUD chuẩn bị ---- */
-  #prepHud{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;font-size:14px}
-  #prepHud b{color:#fff;font-size:16px}
-  .tag{background:#7a2d2d;color:#ffd0d0;font-size:11px;padding:2px 7px;border-radius:99px;margin-left:4px}
-  #prepMsg{font-size:13px;color:#e8c26a;margin:-2px 0 8px;min-height:18px}
-  #toast{font-size:12px;color:#ff9c9c;min-height:16px;margin-top:4px}
-  #toast.good{color:#6fe39a}
+/* ---- Nút ---- */
+button,select,input{font:inherit;color:inherit}
+button{background:var(--surf2);border:1px solid var(--line2);border-radius:10px;height:40px;padding:0 14px;font-weight:600;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:transform .08s ease,background .15s ease,border-color .15s ease}
+button:active:not(:disabled){transform:scale(.97)}
+button:hover:not(:disabled){background:var(--surf3)}
+button:disabled{opacity:.38;cursor:default}
+button.gold{background:var(--gold);border-color:transparent;color:#1a1405}
+button.gold:hover:not(:disabled){background:var(--gold2)}
+button.ghost{background:transparent}
+button.danger{color:#f08c86;border-color:rgba(212,87,79,.4)}
+button.sm{height:30px;padding:0 10px;font-size:12px;border-radius:8px}
+button.icon{width:38px;height:38px;padding:0;font-size:18px}
+button.on{background:var(--surf3);border-color:var(--gold);color:var(--gold2)}
+select,input[type=number]{background:var(--bg2);border:1px solid var(--line2);border-radius:9px;height:38px;padding:0 10px;font-size:14px}
+input[type=number]{width:100%}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--tx2);letter-spacing:.02em}
+.muted{color:var(--tx3);font-size:12px}
+.lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--tx3);font-weight:600}
 
-  /* ---- Bàn đội hình ---- */
-  .boardwrap{display:flex;gap:6px;align-items:stretch}
-  .board{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;max-width:420px}
-  .frontline{writing-mode:vertical-rl;color:#d9443f;font-size:11px;letter-spacing:2px;text-align:center;opacity:.8}
-  .slot{aspect-ratio:1;background:#182646;border:1px dashed #2b3a63;border-radius:8px;position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;min-width:0}
-  .slot:nth-child(odd){background:#15213a}
-  .slot.over{outline:2px solid #6fd3ff}
-  .benchrow{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;max-width:420px}
-  .benchrow .slot{background:#1b1f2b;border-color:#343c52}
-  .unit{width:92%;height:92%;border-radius:8px;background:#2f6df6;border:2px solid #ffffff44;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;user-select:none;position:relative;overflow:hidden}
-  .unit.sel{border-color:#ffd23f;box-shadow:0 0 0 2px #ffd23f88}
-  .unit .ic{font-size:clamp(18px,4.6vw,32px);line-height:1.1}
-  .unit .st{font-size:10px;color:#ffd23f;height:11px;line-height:11px}
-  .unit .nm{font-size:10px;color:#fff;opacity:.9;white-space:nowrap}
-  .unit .gn{position:absolute;right:3px;top:2px;font-size:9px;color:#f1c453}
+/* ---- Màn chính ---- */
+#titleScr{align-items:center;justify-content:center;padding:24px}
+.brand{text-align:center;margin-bottom:34px}
+.brand h1{margin:0;font-size:clamp(30px,9vw,46px);font-weight:800;letter-spacing:.3em;margin-right:-.3em;line-height:1}
+.brand .rule{width:44px;height:2px;background:var(--gold);margin:16px auto 12px}
+.brand p{margin:0;color:var(--tx2);font-size:13px;letter-spacing:.06em}
+.menu{width:min(340px,100%);display:flex;flex-direction:column;gap:10px}
+.menu button{height:52px;font-size:15px;border-radius:13px}
+.menu .row2{display:flex;gap:10px}.menu .row2 button{flex:1;height:44px;font-size:13px}
+.menu .seedrow{display:flex;gap:8px;align-items:end}.menu .seedrow label{flex:1}
+.ver{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:var(--tx3);font-size:11px;letter-spacing:.1em}
 
-  /* ---- Info quân ---- */
-  #info{margin-top:10px;background:#10151f;border:1px solid #232b3b;border-radius:8px;padding:8px 10px;font-size:13px;min-height:60px}
-  #info h3{margin:0 0 4px;font-size:14px}
-  #info .stats{color:#aab6ca;font-size:12px}
-  #info button{margin-top:6px}
+/* ---- Thanh trên (chuẩn bị) ---- */
+#topbar{flex:none;height:52px;display:flex;align-items:center;gap:14px;padding:0 12px}
+.wave{display:flex;align-items:baseline;gap:6px}
+.wave b{font-size:24px;font-weight:800;line-height:1}.wave .of{color:var(--tx3);font-size:13px}
+.tag{font-size:10px;font-weight:700;letter-spacing:.12em;color:#f3a29c;border:1px solid rgba(212,87,79,.5);border-radius:5px;padding:2px 6px;margin-left:4px;align-self:center}
+.stats{display:flex;gap:6px;margin-left:auto}
+.stat{display:flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:99px;background:var(--surf);border:1px solid var(--line);font-weight:700;font-size:15px}
+.stat.gold{color:var(--gold2)}.stat.life{color:#ee8780}.stat.streak{color:var(--tx2)}.stat.streak.hot{color:#f0a060}
+#strip{flex:none;display:flex;gap:6px;padding:0 12px 6px}
+.chip{flex:1;min-width:0;display:flex;align-items:center;gap:7px;height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:var(--surf);font-size:12px;color:var(--tx2);cursor:pointer;overflow:hidden;white-space:nowrap}
+.chip span{overflow:hidden;text-overflow:ellipsis}
+.chip.rule{border-color:rgba(214,168,75,.45);color:var(--gold2)}
+.chip b{color:var(--tx)}.chip.rule b{color:var(--gold2)}
+.chip .rw{margin-left:auto;color:var(--gold2);font-weight:700;flex:none}
 
-  /* ---- Shop ---- */
-  #shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px}
-  .card{background:#1d2433;border:1px solid #2c3750;border-radius:8px;padding:8px 6px;text-align:center;cursor:pointer;font-size:12px;position:relative}
-  .card:hover:not(.sold):not(.off){background:#26304a}
-  .card.sold{opacity:.25;cursor:default;border-style:dashed}
-  .card.off{opacity:.55;cursor:not-allowed}
-  .card .ic{font-size:28px;line-height:1.2}
-  .card .nm{font-weight:600;font-size:13px}
-  .card .sp{color:#9fb0c8;font-size:11px}
-  .card .pr{margin-top:3px;color:#ffd23f;font-weight:700}
-  .chips{display:flex;flex-wrap:wrap;gap:5px}
-  .chip{background:#2a1a20;border:1px solid #5a2a33;border-radius:6px;padding:3px 6px;font-size:12px}
-  .chip.rare{border-color:#e8c26a}
+/* ---- Sân ---- */
+#stage{flex:1;min-height:0;display:flex;flex-direction:column}
+#stagehead{flex:none;display:flex;align-items:center;justify-content:space-between;padding:2px 14px 6px;min-height:28px;font-size:12px;color:var(--tx3)}
+#stagehead b{color:var(--tx);font-weight:700;letter-spacing:.02em}
+#stagehead .full{color:var(--gold2)}
+#stagehead .modehint{color:var(--gold2);display:flex;gap:8px;align-items:center}
+#boardarea{flex:1;min-height:0;container-type:size;display:grid;place-items:center;padding:0 10px}
+#boardwrap{width:min(100cqw,100cqh,560px);aspect-ratio:1/1;display:grid;grid-template-columns:.8fr 4fr;gap:12px}
+#bench{display:grid;grid-template-rows:repeat(5,1fr);gap:6px}
+#bench .lblcell{display:flex;align-items:flex-end;justify-content:center}
+#board{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(5,1fr);gap:6px;position:relative}
+#board::after{content:"";position:absolute;right:-8px;top:2px;bottom:2px;width:2px;border-radius:2px;background:linear-gradient(var(--red),rgba(212,87,79,.25));opacity:.8}
+.slot{background:var(--surf);border:1px solid var(--line);border-radius:11px;position:relative;display:grid;place-items:center;cursor:pointer;min-width:0;min-height:0;transition:background .12s,border-color .12s}
+.slot.alt{background:#171c27}
+#bench .slot{background:var(--bg2);border-style:dashed;border-color:var(--line2)}
+.slot.over{border-color:var(--gold)}
+.slot.xt{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.unit{position:absolute;inset:4px;border-radius:9px;background:var(--tc,var(--t-tank));display:grid;place-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -10px 18px rgba(0,0,0,.18);cursor:grab}
+.unit.sel{outline:2px solid var(--gold2);outline-offset:1px}
+.unit svg{width:56%;height:56%;color:#fff;stroke-width:1.7;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
+.unit .stars{position:absolute;left:0;right:0;bottom:3px;display:flex;justify-content:center;gap:1px;color:#ffe29a;font-size:8px;line-height:1}
+.unit .stars svg{width:9px;height:9px;filter:none}
+.unit .gp{position:absolute;top:3px;right:3px;display:flex;gap:2px}
+.unit .gp i{width:6px;height:6px;border-radius:2px;background:var(--gold2);transform:rotate(45deg);box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.unit .sp{position:absolute;top:3px;left:4px;font-size:9px;font-weight:700;color:#fff;opacity:.85}
 
-  /* ---- Trận ---- */
-  #stage{flex:1 1 640px;min-width:0;position:relative}
-  #hud{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;margin-bottom:6px;color:#aab6ca}
-  #hud b{color:#fff}
-  #rulebar{font-size:12px;color:#e8c26a;margin-bottom:6px;min-height:16px}
-  canvas{display:block;width:100%;aspect-ratio:8/5;border-radius:8px;background:#10151f;touch-action:manipulation}
-  #ctrl{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
-  #ctrl .sp{flex:1}
-  #result{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#0b0f17ee;border:2px solid #2f6df6;border-radius:12px;padding:16px 22px;text-align:center;display:none;min-width:230px;max-width:92%}
-  #result.win{border-color:#3ecf6e}#result.lose{border-color:#ef4444}
-  #result h2{margin:0 0 6px;font-size:22px}
-  #result p{margin:3px 0;font-size:13px;color:#aab6ca}
-  #result .btns{display:flex;gap:8px;justify-content:center;margin-top:8px}
-  #logwrap{flex:0 1 340px;min-width:260px;width:100%}
-  #logwrap.hidden{display:none}
-  #log{height:460px;overflow:auto;font:11px/1.45 ui-monospace,Consolas,monospace;background:#0b0f17;border:1px solid #232b3b;border-radius:8px;padding:6px;white-space:pre-wrap;word-break:break-word}
-  #log div{padding:1px 0;border-bottom:1px solid #121826}
-  #log .g{color:#f1c453}#log .d{color:#ff7a7a}#log .h{color:#6fe39a}#log .e{color:#fff;font-weight:700}#log .x{color:#8b98ad}
-  .hint{font-size:11px;color:#6d7a90;margin-top:6px}
+/* ---- Dock ---- */
+#dock{flex:none;background:var(--bg2);border-top:1px solid var(--line);display:flex;flex-direction:column;position:relative}
+#tabs{display:flex;padding:0 6px;border-bottom:1px solid var(--line)}
+#tabs button{flex:1;height:40px;white-space:nowrap;padding:0 4px;background:transparent;border:0;border-radius:0;color:var(--tx3);font-size:13px;position:relative;gap:6px}
+#tabs button.act{color:var(--tx)}
+#tabs button.act::after{content:"";position:absolute;left:22%;right:22%;bottom:-1px;height:2px;background:var(--gold);border-radius:2px}
+#tabs .bd{min-width:17px;height:17px;border-radius:9px;background:var(--surf3);color:var(--tx2);font-size:10.5px;display:grid;place-items:center;padding:0 5px}
+#tabs .bd.hot{background:var(--gold);color:#1a1405}
+#panel{height:clamp(158px,27dvh,250px);overflow-y:auto;overscroll-behavior:contain;padding:10px 12px}
+.pane-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;min-height:30px}
+.pane-head .t{font-size:12px;color:var(--tx2)}.pane-head .t b{color:var(--tx)}
+.empty{height:100%;display:grid;place-items:center;text-align:center;color:var(--tx3);font-size:13px;padding:0 20px}
+#dockfoot{padding:8px 12px calc(8px + 0px);position:relative}
+#btnStart{width:100%;height:50px;font-size:16px;border-radius:13px;letter-spacing:.02em}
+#toast{position:absolute;left:12px;right:12px;bottom:calc(100% + 8px);padding:9px 12px;border-radius:10px;background:#1d2230;border:1px solid var(--line2);font-size:13px;text-align:center;opacity:0;transform:translateY(6px);transition:opacity .18s,transform .18s;pointer-events:none;z-index:30;color:#f0a8a2}
+#toast.show{opacity:1;transform:none}#toast.good{color:#8fe0b2}
 
-  /* ---- M6 ---- */
-  table.t{border-collapse:collapse;font-size:12px;width:100%;margin:6px 0}
-  table.t th,table.t td{border-bottom:1px solid #2a3350;padding:3px 6px;text-align:right}
-  table.t th:first-child,table.t td:first-child{text-align:left}
-  table.t th{color:#9aa7bd;font-weight:600;cursor:default}
-  .bar{height:6px;background:#26304a;border-radius:3px;overflow:hidden;min-width:50px}.bar i{display:block;height:100%;background:#3ecf6e}
-  #prog{height:10px;background:#26304a;border-radius:5px;overflow:hidden;margin:8px 0}#prog i{display:block;height:100%;width:0;background:#2f6df6}
-  .scroll{overflow-x:auto}
-  #dbg{position:fixed;left:0;right:0;bottom:0;background:#0b0e14ee;border-top:2px solid #e8c26a;padding:8px 10px;font-size:12px;z-index:60;max-height:46vh;overflow:auto}
-  #dbg .r{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:4px 0}
-  #dbg input[type=number]{width:120px}
-  #dbg pre{white-space:pre-wrap;word-break:break-all;margin:4px 0;color:#9aa7bd}
-  /* ---- M5 ---- */
-  .banner{border:1px solid #3a4560;border-radius:8px;padding:6px 8px;font-size:12px;margin-bottom:6px;line-height:1.4}
-  .banner.rule{border-color:#e8c26a;background:#1a1810;color:#f1d68a}
-  .banner.next{border-color:#3a4560;color:#9aa7bd}
-  .banner.obj{border-color:#4aa3ff;background:#101a2a;color:#bcd8ff}
-  .banner.xfer{border-color:#ffd23f;background:#2a2410;color:#ffe9a0}
-  #marketBox{border-color:#a044d6;background:#1a1020}
-  .gcard.cursedbuy{border-color:#a044d6}
-  .slot.xt{outline:2px dashed #ffd23f}
-  /* ---- Gene ---- */
-  .gcard{background:#1d2433;border:2px solid #3a4560;border-radius:8px;padding:8px;font-size:12px;cursor:pointer;text-align:left;position:relative}
-  .gcard:hover{background:#26304a}
-  .gcard .gn{font-weight:700;font-size:13px}
-  .gcard .rar{font-size:10px;margin-left:6px;opacity:.9}
-  .gcard .ds{color:#b9c4d6;margin-top:3px;line-height:1.35}
-  .r-common{border-color:#4a5a7a}.r-common .gn{color:#cfe0ff}
-  .r-rare{border-color:#e8c26a}.r-rare .gn{color:#f1c453}
-  .r-cursed{border-color:#a044d6}.r-cursed .gn{color:#d58cff}
-  .gcard.picked{outline:3px solid #6fe39a}
-  #geneReward{border-color:#e8c26a;background:#1a1810}
-  #geneReward .opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px}
-  #stash{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-  .gslot{min-height:46px;border:1px dashed #343c52;border-radius:8px;padding:4px 6px;font-size:12px;display:flex;align-items:center;justify-content:center;text-align:center;color:#6d7a90}
-  .gslot.has{border-style:solid;cursor:pointer;color:#fff;font-weight:600}
-  .gslot.has.sel{outline:3px solid #ffd23f}
-  .ulist{margin-top:6px;display:flex;flex-direction:column;gap:4px}
-  .urow{display:flex;gap:6px;align-items:flex-start;font-size:12px;border:1px solid #2c3750;border-radius:6px;padding:4px 6px}
-  .urow .t{flex:1}
-  .urow button{padding:2px 8px;font-size:12px;margin:0}
-  #modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:50;padding:10px}
-  #modal .box{background:#161b26;border:2px solid #2f6df6;border-radius:12px;padding:14px;max-width:560px;width:100%;max-height:90vh;overflow:auto}
-  #modal h3{margin:0 0 8px}
-  #modal .opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin-bottom:10px}
+/* shop */
+#shop{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.card{background:var(--surf);border:1px solid var(--line);border-radius:11px;padding:8px 2px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;min-width:0;transition:transform .08s,background .12s}
+.card:active:not(.sold):not(.off){transform:scale(.96)}
+.card:hover:not(.sold):not(.off){background:var(--surf2)}
+.card.sold{opacity:.3;border-style:dashed;cursor:default}
+.card.off{opacity:.5}
+.card .tk{width:34px;height:34px;border-radius:9px;background:var(--tc);display:grid;place-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
+.card .tk svg{width:20px;height:20px;color:#fff}
+.card .nm{font-weight:700;font-size:11.5px;white-space:nowrap}
+.card .sx{font-size:10px;color:var(--tx3);line-height:1.25;text-align:center}
+.card .pr{display:flex;align-items:center;gap:4px;color:var(--gold2);font-weight:700;font-size:12.5px;margin-top:1px}
 
-  /* ---- Kết thúc run ---- */
-  #endScr h2{margin:0 0 6px;font-size:24px}
-  .endrow{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
-  @media(max-width:700px){#log{height:240px}#logwrap{flex:1 1 100%}}
+/* gene */
+.gcard{background:var(--surf);border:1px solid var(--line);border-left:3px solid var(--rc,var(--c-common));border-radius:10px;padding:9px 11px;cursor:pointer;text-align:left;position:relative;transition:background .12s}
+.gcard:hover{background:var(--surf2)}
+.gcard .gh{display:flex;align-items:center;gap:8px}
+.gcard .gn{font-weight:700;font-size:13.5px;color:var(--rc,var(--c-common))}
+.gcard .rar{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)}
+.gcard .ds{color:var(--tx2);font-size:12px;margin-top:3px;line-height:1.38}
+.r-common{--rc:var(--c-common)}.r-rare{--rc:var(--c-rare)}.r-cursed{--rc:var(--c-cursed)}
+.r-common .gn{color:var(--c-common)}.r-rare .gn{color:var(--c-rare)}.r-cursed .gn{color:var(--c-cursed)}
+.gcard.picked{outline:2px solid var(--grn);outline-offset:1px}
+#stash{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.gslot{height:40px;border:1px dashed var(--line2);border-radius:9px;padding:0 6px;font-size:12px;display:grid;place-items:center;text-align:center;color:var(--tx3);line-height:1.15;overflow:hidden}
+.gslot.has{border-style:solid;border-left:3px solid var(--rc);background:var(--surf);cursor:pointer;font-weight:600;color:var(--rc)}
+.gslot.has.sel{outline:2px solid var(--gold2);outline-offset:1px}
+.ginfo{font-size:12px;color:var(--tx2);margin-top:8px;display:flex;gap:8px;align-items:center;justify-content:space-between}
+
+/* quân */
+.uhead{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.uhead .tk{width:40px;height:40px;border-radius:10px;background:var(--tc);display:grid;place-items:center;flex:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
+.uhead .tk svg{width:24px;height:24px;color:#fff}
+.uhead .nm{font-weight:800;font-size:15px;display:flex;align-items:center;gap:6px}
+.uhead .nm .st{color:var(--gold2);display:inline-flex;gap:1px;font-size:11px}
+.uhead .sub{font-size:12px;color:var(--tx2)}
+.urow{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-left:3px solid var(--rc);border-radius:9px;padding:6px 8px;margin-bottom:5px;background:var(--surf)}
+.urow .t{flex:1;font-size:11.5px;color:var(--tx2);line-height:1.3}.urow .t b{color:var(--rc);font-size:12.5px}
+.uact{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+
+/* địch */
+.blk{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:7px;font-size:12px;color:var(--tx2);background:var(--surf)}
+.blk b{color:var(--tx)}.blk.rule{border-color:rgba(214,168,75,.4)}.blk.rule b{color:var(--gold2)}
+.blk .h{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:2px}
+.echips{display:flex;flex-wrap:wrap;gap:5px}
+.ech{display:flex;align-items:center;gap:5px;height:28px;padding:0 8px 0 4px;border-radius:8px;background:var(--surf);border:1px solid var(--line);font-size:11px;color:var(--tx2)}
+.ech.rare{border-color:rgba(239,201,119,.5)}
+.ech .tk{width:20px;height:20px;border-radius:6px;background:var(--tc);display:grid;place-items:center}.ech .tk svg{width:13px;height:13px;color:#fff}
+.ech i{font-style:normal;color:var(--gold2)}
+
+/* sheet / modal */
+.overlay{position:fixed;inset:0;z-index:40;background:rgba(4,6,9,.66);display:flex;align-items:flex-end;justify-content:center}
+.overlay.center{align-items:center;padding:14px}
+.box{width:min(560px,100%);max-height:86dvh;overflow-y:auto;overscroll-behavior:contain;background:var(--surf);border:1px solid var(--line2);border-radius:18px 18px 0 0;padding:16px 14px calc(14px + env(safe-area-inset-bottom))}
+.overlay.center .box{border-radius:18px;padding-bottom:14px}
+.box.anim{animation:up .22s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.box h3{margin:0;font-size:17px;font-weight:800}
+.box .sub{color:var(--tx2);font-size:12.5px;margin:2px 0 12px}
+.box .opts{display:flex;flex-direction:column;gap:7px;margin-bottom:12px}
+.box .btns{display:flex;gap:8px}.box .btns button{flex:1}
+.mk{border:1px solid rgba(167,123,220,.5);background:rgba(167,123,220,.07);border-radius:12px;padding:10px;margin-bottom:14px}
+.mk .lbl{color:var(--vio);margin-bottom:6px}
+.mk .gcard{margin-bottom:8px;background:var(--surf)}
+.sec{margin-top:6px}.sec .lbl{margin:10px 0 6px}
+
+/* cài đặt */
+.setrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.setrow:last-of-type{border-bottom:0}
+.setrow .tx{flex:1}.setrow .tx b{display:block;font-size:14px}.setrow .tx span{font-size:12px;color:var(--tx3)}
+.sw{width:46px;height:28px;border-radius:99px;background:var(--surf3);border:1px solid var(--line2);position:relative;padding:0;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--tx2);transition:transform .16s,background .16s}
+.sw.on{background:rgba(214,168,75,.25);border-color:var(--gold)}.sw.on::after{transform:translateX(18px);background:var(--gold2)}
+.howto{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--tx2);margin:6px 0 4px;line-height:1.55}
+details.dev{margin-top:8px;color:var(--tx2)}details.dev summary{cursor:pointer;padding:10px 0;font-size:13px}
+.devgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+
+@media (max-width:400px){.chip .pre{display:none}}
+@media (min-width:860px) and (min-aspect-ratio:5/4){
+  #prepScr{display:grid;grid-template-columns:minmax(0,1fr) 440px;grid-template-rows:auto auto minmax(0,1fr)}
+  #topbar,#strip{grid-column:1/3}
+  #stage{grid-column:1;grid-row:3}
+  #dock{grid-column:2;grid-row:3;border-top:0;border-left:1px solid var(--line);min-height:0}
+  #panel{flex:1;height:auto;min-height:0}
+  #boardwrap{width:min(100cqw,100cqh,640px)}
+}
+/* ---- Trận ---- */
+#battleScr{display:flex}
+#bhud{flex:none;display:flex;align-items:center;gap:12px;padding:10px 14px 6px;font-size:13px;color:var(--tx2)}
+#bhud b{color:var(--tx);font-size:15px}
+#tbar{flex:1;height:4px;background:var(--surf2);border-radius:3px;overflow:hidden}#tbar i{display:block;height:100%;width:0;background:var(--gold)}
+#bhud .side{display:flex;gap:5px;align-items:baseline}
+#bhud .me b{color:#8ab0ee}#bhud .en b{color:#ee8f88}
+#rulebar{flex:none;padding:0 14px 6px;font-size:12px;color:var(--gold2);min-height:0}
+#rulebar:empty{display:none}
+#bmain{flex:1;min-height:0;display:flex;flex-direction:column}
+#canvaswrap{flex:none;position:relative;width:min(100%,calc((100dvh - 230px)*1.6));margin:0 auto;padding:0 8px}
+canvas{display:block;width:100%;aspect-ratio:8/5;border-radius:12px;background:var(--bg2);border:1px solid var(--line)}
+#logwrap{flex:1;min-height:0;padding:8px 10px 0;display:flex}
+#logwrap.hidden{display:none}
+#log{flex:1;overflow-y:auto;overscroll-behavior:contain;font:11px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--tx2);background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:8px;white-space:pre-wrap;word-break:break-word;-webkit-user-select:none}
+#log div{padding:1px 0}
+#log .g{color:var(--gold2)}#log .d{color:#f08c86}#log .h{color:#8fe0b2}#log .e{color:var(--tx);font-weight:700}#log .x{color:var(--tx3)}
+#ctrl{flex:none;display:flex;gap:6px;align-items:center;padding:8px 10px calc(10px)}
+.seg{display:flex;background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:2px}
+.seg button{height:34px;border:0;border-radius:8px;background:transparent;padding:0 12px;font-size:13px;color:var(--tx2)}
+.seg button.on{background:var(--surf3);color:var(--tx)}
+#ctrl .sp{flex:1}
+#result{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(88%,330px);background:rgba(12,15,21,.96);border:1px solid var(--line2);border-top:3px solid var(--tx3);border-radius:14px;padding:16px;text-align:center;display:none;box-shadow:0 18px 50px rgba(0,0,0,.55)}
+#result.win{border-top-color:var(--grn)}#result.lose{border-top-color:var(--red)}
+#result h2{margin:0 0 8px;font-size:19px;letter-spacing:.12em;font-weight:800}
+#result.win h2{color:#8fe0b2}#result.lose h2{color:#f08c86}
+#result p{margin:4px 0;font-size:12.5px;color:var(--tx2);line-height:1.45}
+#result .btns{display:flex;gap:8px;margin-top:12px}#result .btns button{flex:1}
+@media (min-width:860px) and (min-aspect-ratio:5/4){
+  #bmain{flex-direction:row}
+  #canvaswrap{width:auto;flex:1;margin:0;display:flex;align-items:flex-start;padding:0 0 0 12px}
+  #logwrap{flex:0 0 340px;padding:0 12px 0 10px}
+  #canvaswrap canvas{max-height:calc(100dvh - 140px);width:auto;max-width:100%;aspect-ratio:8/5}
+}
+
+/* ---- Kết thúc / test ---- */
+#endScr,#testScr{overflow-y:auto;padding:22px 16px;align-items:center}
+.endbox{width:min(520px,100%)}
+#endScr h2{margin:0;font-size:30px;font-weight:800;letter-spacing:.14em}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}
+.tile{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:12px 8px;text-align:center}
+.tile b{display:block;font-size:22px;font-weight:800}.tile span{font-size:11px;color:var(--tx3);letter-spacing:.08em;text-transform:uppercase}
+.endteam{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 14px}
+.endbox .gl{font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:18px}
+.testbox{width:min(900px,100%)}
+table.t{border-collapse:collapse;font-size:12px;width:100%;margin:6px 0}
+table.t th,table.t td{border-bottom:1px solid var(--line);padding:5px 6px;text-align:right;white-space:nowrap}
+table.t th:first-child,table.t td:first-child{text-align:left}
+table.t th{color:var(--tx3);font-weight:600;font-size:11px;letter-spacing:.06em}
+.bar{height:5px;background:var(--surf3);border-radius:3px;overflow:hidden;min-width:44px}.bar i{display:block;height:100%;background:var(--grn)}
+#prog{height:6px;background:var(--surf2);border-radius:4px;overflow:hidden;margin:10px 0}#prog i{display:block;height:100%;width:0;background:var(--gold)}
+.scrollx{overflow-x:auto}
+.ttl{font-size:12px;color:var(--tx2);margin:14px 0 4px}.ttl b{color:var(--tx)}
+#dbg{position:fixed;left:0;right:0;bottom:0;background:rgba(9,11,15,.96);border-top:1px solid var(--gold);padding:10px 12px;font-size:12px;z-index:90;max-height:46vh;overflow:auto;-webkit-user-select:text;user-select:text}
+#dbg .r{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+#dbg input[type=number]{width:130px}
+#dbg pre{white-space:pre-wrap;word-break:break-all;margin:4px 0;color:var(--tx2)}
 </style>
 </head>
 <body>
 <div id="app">
-  <h1>GENE ARENA <small>v0.1 · M6</small> <button id="btnDbg" class="muted" style="padding:0 6px;font-size:11px" title="Debug (phím D)">🐞</button></h1>
 
-  <!-- ============ MÀN HÌNH CHÍNH ============ -->
-  <section id="titleScr" class="panel">
-    <div class="setup">
-      <label>Seed run (bỏ trống = ngẫu nhiên)<input id="inRunSeed" type="number" placeholder="ngẫu nhiên"></label>
-      <button id="btnNewRun" class="primary">▶ Run mới</button>
-      <button id="btnContinue" class="primary" hidden>⏵ Tiếp tục</button>
+  <!-- ============ MENU ============ -->
+  <section id="titleScr" class="scr">
+    <div class="brand">
+      <h1>GENE ARENA</h1><div class="rule"></div>
+      <p>Auto-battler roguelike · 15 ải</p>
     </div>
-    <div class="setup">
-      <label>Số run bot<input id="inBotRuns" type="number" value="100" min="1" max="1000"></label>
-      <button id="btnPlaytest">🧪 Auto-playtest</button>
-    </div>
-    <p class="muted">15 ải · 5 mạng · 10 vàng đầu run. Mua quân, xếp đội, gộp 3 quân cùng loại + cùng sao thành sao cao hơn. Sau mỗi trận chọn gene thưởng, gắn tối đa 2 gene/quân. Có luật thế giới đổi theo ải, nhiệm vụ phụ, chợ đen (đổi mạng lấy gene Nguyền rủa) và mảnh ký ức. Tự động lưu sau mỗi thao tác.</p>
-    <details>
-      <summary>Trận thử (dev) — đội cố định, chọn ải / luật / seed</summary>
-      <div class="setup">
-        <label>Ải<select id="selWave"></select></label>
-        <label>Luật thế giới<select id="selRule"></select></label>
-        <label>Seed<input id="inSeed" type="number" value="1"></label>
-        <button id="btnDice" title="Seed ngẫu nhiên">🎲</button>
-        <button id="btnRun">▶ Chạy trận thử</button>
+    <div class="menu">
+      <button id="btnContinue" class="gold" hidden>Tiếp tục</button>
+      <button id="btnNewRun">Run mới</button>
+      <div class="seedrow" id="seedRow" hidden>
+        <label class="f">Seed run (trống = ngẫu nhiên)<input id="inRunSeed" type="number" placeholder="ngẫu nhiên" inputmode="numeric"></label>
       </div>
-    </details>
+      <div class="row2">
+        <button id="btnSeed" class="ghost">Nhập seed</button>
+        <button id="btnSettings" class="ghost" data-ic="gear">Cài đặt</button>
+      </div>
+    </div>
+    <div class="ver">v0.1</div>
   </section>
 
   <!-- ============ CHUẨN BỊ ============ -->
-  <section id="prepScr" hidden>
-    <div class="panel" id="prepHud"></div>
-    <div id="prepMsg"></div>
-    <div class="row">
-      <div class="panel" style="flex:1 1 380px;min-width:0">
-        <div class="ttl"><b>Đội hình</b> <span id="fieldCnt"></span> <span class="muted">cột phải = tiền tuyến (sát địch)</span></div>
-        <div class="boardwrap"><div class="board" id="board"></div><div class="frontline">TIỀN TUYẾN ▶ ĐỊCH</div></div>
-        <div class="ttl" style="margin-top:10px"><b>Ghế dự bị</b> <span class="muted">kéo-thả hoặc chạm quân rồi chạm ô đích</span></div>
-        <div class="benchrow" id="bench"></div>
-        <div id="info"></div>
-        <div id="toast"></div>
+  <section id="prepScr" class="scr" hidden>
+    <header id="topbar">
+      <div class="wave"><span class="lbl">Ải</span><b id="tWave">1</b><span class="of">/15</span><span class="tag" id="tBoss" hidden>BOSS</span></div>
+      <div class="stats">
+        <span class="stat life" data-ic="heart"><b id="tLives">5</b></span>
+        <span class="stat gold" data-ic="coin"><b id="tGold">0</b></span>
+        <span class="stat streak" id="tStreakWrap" data-ic="flame" title="Chuỗi thắng"><b id="tStreak">0</b></span>
       </div>
-      <div class="panel" style="flex:1 1 380px;min-width:0">
-        <div id="marketBox" class="panel" hidden></div>
-        <div id="geneReward" class="panel" hidden></div>
-        <div class="ttl"><b>Shop</b> <span class="muted">mua 3🪙 · bán 2/5/9🪙</span> <button id="btnReroll">🔄 Làm mới (1🪙)</button></div>
-        <div id="shop"></div>
-        <div class="ttl" style="margin-top:12px"><b>Kho gene</b> <span id="stashCnt" class="muted"></span> <span class="muted">chạm gene → chạm quân để gắn</span></div>
-        <div id="stash"></div>
-        <div id="ginfo" class="muted" style="min-height:20px;margin-top:6px"></div>
-        <div id="ruleBox"></div><div id="objBox"></div>
-        <div class="ttl" style="margin-top:12px"><b id="enemyTtl">Địch</b> <span class="muted" id="enemyNote"></span></div>
-        <div class="chips" id="enemyPrev"></div>
-        <button id="btnStart" class="primary big">⚔ Bắt đầu trận</button>
+      <button id="btnGear" class="icon ghost" data-ic="gear" aria-label="Cài đặt"></button>
+    </header>
+    <div id="strip"></div>
+    <main id="stage">
+      <div id="stagehead"></div>
+      <div id="boardarea">
+        <div id="boardwrap"><div id="bench"></div><div id="board"></div></div>
       </div>
-    </div>
+    </main>
+    <aside id="dock">
+      <nav id="tabs"></nav>
+      <div id="panel"></div>
+      <div id="dockfoot"><div id="toast"></div><button id="btnStart" class="gold">Bắt đầu</button></div>
+    </aside>
   </section>
 
   <!-- ============ AUTO-PLAYTEST ============ -->
-  <section id="testScr" class="panel" hidden>
-    <div class="ttl"><b>🧪 Auto-playtest</b> <span class="muted" id="testNote"></span> <button id="btnTestBack">← Về menu</button></div>
-    <div id="prog"><i></i></div>
-    <div id="testOut"></div>
+  <section id="testScr" class="scr" hidden>
+    <div class="testbox">
+      <div style="display:flex;align-items:center;gap:10px"><b style="font-size:17px">Auto-playtest</b> <span class="muted" id="testNote"></span><button id="btnTestBack" class="sm" style="margin-left:auto">Về menu</button></div>
+      <div id="prog"><i></i></div>
+      <div id="testOut"></div>
+    </div>
   </section>
 
   <!-- ============ TRẬN ĐẤU ============ -->
-  <section id="battleScr" hidden>
-    <div class="row">
-      <div id="stage" class="panel">
-        <div id="hud">
-          <span>⏱ <b id="hTime">0.0</b>s / 60s</span>
-          <span>Ta <b id="hP">-</b></span>
-          <span>Địch <b id="hE">-</b></span>
-          <span>Seed <b id="hSeed">-</b></span>
-        </div>
-        <div id="rulebar"></div>
+  <section id="battleScr" class="scr" hidden>
+    <div id="bhud">
+      <span class="side"><span class="lbl">Thời gian</span><b id="hTime">0.0</b><span class="muted">/60s</span></span>
+      <div id="tbar"><i></i></div>
+      <span class="side me"><span class="lbl">Ta</span><b id="hP">-</b></span>
+      <span class="side en"><span class="lbl">Địch</span><b id="hE">-</b></span>
+      <span id="hSeed" hidden></span>
+    </div>
+    <div id="rulebar"></div>
+    <div id="bmain">
+      <div id="canvaswrap">
         <canvas id="c"></canvas>
         <div id="result"><h2 id="rTitle"></h2><p id="rLine1"></p><p id="rLine2"></p><p id="rLine3"></p>
-          <div class="btns"><button id="btnRe">↻ Phát lại</button><button id="btnNext" class="primary">Tiếp tục ▶</button></div></div>
-        <div id="ctrl">
-          <button id="bPause">⏸ Tạm dừng</button>
-          <button data-sp="1" class="spd on">x1</button>
-          <button data-sp="2" class="spd">x2</button>
-          <button data-sp="4" class="spd">x4</button>
-          <button id="bSkip">⏭ Bỏ qua</button>
-          <button id="bReplay">↻ Phát lại</button>
-          <span class="sp"></span>
-          <button id="bLog" class="on">Log</button>
-        </div>
-        <div class="hint">Phím: Space = tạm dừng · 1/2/4 = tốc độ · S = bỏ qua · R = phát lại.</div>
+          <div class="btns"><button id="btnRe">Phát lại</button><button id="btnNext" class="gold">Tiếp tục</button></div></div>
       </div>
-      <div id="logwrap" class="panel"><div id="log"></div></div>
+      <div id="logwrap"><div id="log"></div></div>
+    </div>
+    <div id="ctrl">
+      <button id="bPause" class="icon" aria-label="Tạm dừng"></button>
+      <div class="seg"><button data-sp="1" class="spd on">1×</button><button data-sp="2" class="spd">2×</button><button data-sp="4" class="spd">4×</button></div>
+      <button id="bSkip" class="icon" aria-label="Bỏ qua" data-ic="skip"></button>
+      <button id="bReplay" class="icon" aria-label="Phát lại" data-ic="replay"></button>
+      <span class="sp"></span>
+      <button id="bLog" class="on sm">Nhật ký</button>
     </div>
   </section>
 
   <!-- ============ KẾT THÚC RUN ============ -->
-  <section id="endScr" class="panel" hidden>
-    <h2 id="endTitle"></h2>
-    <div id="endBody"></div>
-    <button id="btnAgain" class="primary big">↻ Chơi lại</button>
+  <section id="endScr" class="scr" hidden>
+    <div class="endbox">
+      <h2 id="endTitle"></h2>
+      <div id="endBody"></div>
+      <button id="btnAgain" class="gold" style="width:100%;height:50px">Về menu</button>
+    </div>
   </section>
 </div>
 
-<div id="modal" hidden></div>
+<!-- Sheet thưởng / gộp sao / cài đặt -->
+<div id="sheet" class="overlay" hidden></div>
+<div id="modal" class="overlay center" hidden style="z-index:50"></div>
+<div id="settings" class="overlay" hidden style="z-index:60">
+  <div class="box" id="setbox">
+    <div style="display:flex;align-items:center;margin-bottom:4px"><h3 style="flex:1">Cài đặt</h3><button id="setClose" class="icon ghost" data-ic="close" aria-label="Đóng"></button></div>
+    <div class="setrow"><div class="tx"><b>Toàn màn hình</b><span id="fsNote">Ẩn thanh trình duyệt để chơi như app.</span></div><button class="sw" id="swFs" aria-label="Toàn màn hình"></button></div>
+    <div class="setrow"><div class="tx"><b>Tự vào toàn màn hình khi mở game</b><span>Trình duyệt yêu cầu 1 lần chạm đầu tiên.</span></div><button class="sw" id="swAuto" aria-label="Tự động toàn màn hình"></button></div>
+    <div class="setrow"><div class="tx"><b>Cài lên màn hình chính</b><span id="installNote">Mở game bằng biểu tượng riêng, không thanh địa chỉ.</span></div><button id="btnInstall" class="sm gold">Cài đặt</button></div>
+    <div class="howto" id="howto" hidden></div>
+    <div class="setrow"><div class="tx"><b>Bảng debug</b><span>Seed, chạy lại cùng seed (phím D).</span></div><button class="sw" id="swDbg" aria-label="Debug"></button></div>
+    <details class="dev"><summary>Công cụ phát triển</summary>
+      <div class="devgrid">
+        <label class="f">Số run bot<input id="inBotRuns" type="number" value="100" min="1" max="1000" inputmode="numeric"></label>
+        <div style="display:flex;align-items:end"><button id="btnPlaytest" style="width:100%">Auto-playtest</button></div>
+        <label class="f">Ải<select id="selWave"></select></label>
+        <label class="f">Luật<select id="selRule"></select></label>
+        <label class="f">Seed<input id="inSeed" type="number" value="1" inputmode="numeric"></label>
+        <div style="display:flex;gap:6px;align-items:end"><button id="btnDice" class="icon" data-ic="dice" aria-label="Seed ngẫu nhiên"></button><button id="btnRun" style="flex:1">Trận thử</button></div>
+      </div>
+    </details>
+  </div>
+</div>
 <div id="dbg" hidden>
-  <div class="r"><b>🐞 Debug</b> <span class="muted">(phím D để ẩn)</span> <button id="dbgClose">✕</button></div>
+  <div class="r"><b>Debug</b> <span class="muted">(phím D để ẩn)</span> <button id="dbgClose" class="sm" style="margin-left:auto">Đóng</button></div>
   <div id="dbgInfo"></div>
   <div class="r">
-    <label>Seed trận kế <input id="dbgSeed" type="number" placeholder="mặc định"></label>
-    <button id="dbgApply">Áp</button><button id="dbgClear">Bỏ override</button>
+    <label class="f">Seed trận kế <input id="dbgSeed" type="number" placeholder="mặc định"></label>
+    <button id="dbgApply" class="sm">Áp</button><button id="dbgClear" class="sm">Bỏ override</button>
   </div>
   <div class="r">
-    <button id="dbgRerun" class="primary">↻ Chạy lại cùng seed</button>
-    <label><input id="dbgVerbose" type="checkbox"> Log chi tiết</label>
-    <button id="dbgCopy">Sao chép state JSON</button>
+    <button id="dbgRerun" class="gold sm">Chạy lại cùng seed</button>
+    <label style="display:flex;gap:6px;align-items:center"><input id="dbgVerbose" type="checkbox"> Log chi tiết</label>
+    <button id="dbgCopy" class="sm">Sao chép state JSON</button>
   </div>
   <pre id="dbgOut"></pre>
 </div>
@@ -270,7 +404,36 @@
 // ======================= UI =======================
 // Logic run (shop, gộp sao, kinh tế) nằm trong game.js; file này chỉ vẽ và gọi hàm.
 const $ = id => document.getElementById(id);
-const TYPE_ICON = { tank: '🛡️', fighter: '⚔️', archer: '🏹', mage: '🔮', healer: '💚', assassin: '🗡️' };
+const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const samePos = (a, b) => a && b && a.zone === b.zone && a.x === b.x && a.y === b.y && a.i === b.i;
+const RAR_VI = { common: 'Thường', rare: 'Hiếm', cursed: 'Nguyền rủa' };
+
+// ---------- Icon (path trên lưới 24×24; DOM dùng <svg>, canvas dùng Path2D) ----------
+const ICON_D = {
+  tank: 'M12 3l7 3v5.5c0 4.6-3 7.8-7 9.5-4-1.7-7-4.9-7-9.5V6z',
+  fighter: 'M20 4l-.9 5.3-9.1 9.1L5.6 14l9.1-9.1zM7.9 16.1L4 20M6.6 12.4l5 5',
+  archer: 'M15 3.5c-6.5 3-6.5 14 0 17M15 3.5v17M4.5 12H21M18 9l3 3-3 3',
+  mage: 'M12 3l2.1 6.9L21 12l-6.9 2.1L12 21l-2.1-6.9L3 12l6.9-2.1z',
+  healer: 'M9.5 4h5v5.5H20v5h-5.5V20h-5v-5.5H4v-5h5.5z',
+  assassin: 'M12 2.5l3 9-3 3.5-3-3.5zM12 15v5.5M9 17.5h6',
+  heart: 'M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0112 7.4a4.2 4.2 0 017.5 2.4C19.5 15.4 12 20 12 20z',
+  coin: 'M12 4a8 8 0 100 16 8 8 0 000-16zM12 8.6a3.4 3.4 0 100 6.8 3.4 3.4 0 000-6.8z',
+  flame: 'M12 3c.8 3.2 5 5.2 5 10a5 5 0 01-10 0c0-2 .9-3.2 2-4.2.1 1.8.9 2.7 2 3C11 9 10.6 6 12 3z',
+  gear: 'M12 15.2a3.2 3.2 0 100-6.4 3.2 3.2 0 000 6.4zM19.2 13.4l1.6 1.2-1.8 3.1-1.9-.7a7 7 0 01-1.8 1l-.3 2h-3.6l-.3-2a7 7 0 01-1.8-1l-1.9.7-1.8-3.1 1.6-1.2a7 7 0 010-2l-1.6-1.2 1.8-3.1 1.9.7a7 7 0 011.8-1l.3-2h3.6l.3 2a7 7 0 011.8 1l1.9-.7 1.8 3.1-1.6 1.2a7 7 0 010 2z',
+  close: 'M6 6l12 12M18 6L6 18',
+  skip: 'M5 5l9 7-9 7zM18 5v14',
+  replay: 'M4.5 12a7.5 7.5 0 107.5-7.5c-2 0-3.8.8-5.2 2.1M4.5 4v4.2h4.2',
+  dice: 'M5 5h14v14H5zM9 9h.01M15 9h.01M12 12h.01M9 15h.01M15 15h.01',
+  play: 'M7 4.5l12 7.5-12 7.5z',
+  pause: 'M8.5 5v14M15.5 5v14',
+  star: 'M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z'
+};
+const ic = (n, cls) => '<svg class="i ' + (cls || '') + '" viewBox="0 0 24 24"><path d="' + ICON_D[n] + '"/></svg>';
+const TYPE_COL = { tank: 'var(--t-tank)', fighter: 'var(--t-fighter)', archer: 'var(--t-archer)', mage: 'var(--t-mage)', healer: 'var(--t-healer)', assassin: 'var(--t-assassin)' };
+const tcStyle = t => '--tc:' + TYPE_COL[t];
+function fillIcons() { document.querySelectorAll('[data-ic]').forEach(el => { if (!el.dataset.done) { el.insertAdjacentHTML('afterbegin', ic(el.dataset.ic)); el.dataset.done = 1; } }); }
+fillIcons();
+
 let run = null;          // run hiện tại
 let mode = 'run';        // 'run' | 'dev' (trận thử)
 let cur = 'titleScr';
@@ -278,7 +441,9 @@ let sel = null;          // quân đang chọn trong màn chuẩn bị: pos
 let dragSrc = null;
 let xfer = null;         // đang chọn quân nhận "Truyền ký ức" (vị trí quân sẽ bị bán)
 let selG = null;         // gene đang chọn trong kho (chỉ số) hoặc null
-const RAR_VI = { common: 'Thường', rare: 'Hiếm', cursed: 'Nguyền rủa' };
+let tab = 'shop';        // tab dock: shop | gene | unit | enemy
+let sheetMin = false, sheetShown = false;
+let dbgSeedOverride = null, dbgVerbose = false, lastBattle = null;
 
 function show(id) {
   cur = id;
@@ -287,24 +452,102 @@ function show(id) {
   if (id === 'titleScr') refreshContinue();
   if (!$('dbg').hidden) renderDbg();
 }
-const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-const samePos = (a, b) => a && b && a.zone === b.zone && a.x === b.x && a.y === b.y && a.i === b.i;
 function unitStats(type, star, shards) {
   const T = UNITS[type], m = Math.pow(CONFIG.STAR_MULT, star - 1);
   let hp = T.hp * m, atk = T.atk * m;
   for (const s of (shards || [])) { hp += s.hp; atk += s.atk; }
   return { hp: Math.round(hp), atk: Math.round(atk), cd: T.cd, range: T.range, note: T.note, name: T.name };
 }
-function toast(msg, good) { const t = $('toast'); t.textContent = msg || ''; t.className = good ? 'good' : ''; }
+let toastT = 0;
+function toast(msg, good) {
+  const t = $('toast'); clearTimeout(toastT);
+  if (!msg) { t.classList.remove('show'); return; }
+  t.textContent = msg; t.className = 'show' + (good ? ' good' : '');
+  toastT = setTimeout(() => t.classList.remove('show'), 2400);
+}
 
-// ======================= MÀN CHÍNH =======================
+// ======================= CHỐNG BÔI ĐEN / ZOOM (giống app) =======================
+(function lockUi() {
+  const isField = t => { const e = t && (t.nodeType === 3 ? t.parentElement : t); return !!(e && e.closest && e.closest('input,textarea'));};
+  document.addEventListener('contextmenu', e => { if (!isField(e.target)) e.preventDefault(); });
+  document.addEventListener('selectstart', e => { if (!isField(e.target)) e.preventDefault(); });
+  document.addEventListener('dragstart', e => { const t = e.target; if (!(t && t.closest && t.closest('.unit'))) e.preventDefault(); });
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(n => document.addEventListener(n, e => e.preventDefault()));   // iOS: pinch
+  document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
+  document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+  window.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && ['+', '-', '=', '0'].includes(e.key)) e.preventDefault(); });
+})();
+
+// ======================= CÀI ĐẶT · TOÀN MÀN HÌNH · CÀI LÊN MÀN HÌNH =======================
+const SET_KEY = 'genearena_settings_v1';
+const settings = { autoFs: true };
+try { Object.assign(settings, JSON.parse(localStorage.getItem(SET_KEY) || '{}')); } catch (e) {}
+const saveSettings = () => { try { localStorage.setItem(SET_KEY, JSON.stringify(settings)); } catch (e) {} };
+const isStandalone = () => (window.matchMedia && (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches)) || navigator.standalone === true;
+const docEl = document.documentElement;
+const fsApi = !!(docEl.requestFullscreen || docEl.webkitRequestFullscreen);
+const isFs = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+async function enterFs() { try { if (docEl.requestFullscreen) await docEl.requestFullscreen({ navigationUI: 'hide' }); else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen(); } catch (e) {} }
+async function exitFs() { try { if (document.exitFullscreen) await document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); } catch (e) {} }
+['fullscreenchange', 'webkitfullscreenchange'].forEach(n => document.addEventListener(n, () => { refreshSettings(); if (cur === 'battleScr') resize(); }));
+// Tự vào toàn màn hình ở lần chạm đầu tiên (trình duyệt bắt buộc phải có thao tác người dùng)
+if (fsApi && !isStandalone()) {
+  const first = () => { document.removeEventListener('pointerdown', first, true); if (settings.autoFs && !isFs()) enterFs(); };
+  document.addEventListener('pointerdown', first, true);
+}
+// Manifest + icon tạo động, để vẫn chỉ cần 3 file. (Cài "chuẩn" cần https, vd GitHub Pages.)
+let deferredInstall = null;
+function iconPNG(size) {
+  const c = document.createElement('canvas'); c.width = c.height = size; const g = c.getContext('2d');
+  g.fillStyle = '#0b0e14'; g.fillRect(0, 0, size, size);
+  g.strokeStyle = '#d6a84b'; g.lineWidth = size * 0.035; g.lineCap = g.lineJoin = 'round';
+  g.beginPath(); g.arc(size / 2, size / 2, size * 0.34, 0, 7); g.stroke();
+  g.save(); g.translate(size * 0.26, size * 0.26); g.scale(size * 0.48 / 24, size * 0.48 / 24); g.lineWidth = 1.5; g.fillStyle = '#d6a84b'; g.fill(new Path2D(ICON_D.mage)); g.restore();
+  return c.toDataURL('image/png');
+}
+try {
+  const base = location.href.split('#')[0].split('?')[0], dir = base.replace(/[^/]*$/, '');
+  const i192 = iconPNG(192), i512 = iconPNG(512);
+  const man = { name: 'Gene Arena', short_name: 'Gene Arena', start_url: base, scope: dir, display: 'fullscreen', display_override: ['fullscreen', 'standalone'], orientation: 'any',
+    background_color: '#090b0f', theme_color: '#090b0f', icons: [{ src: i192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' }, { src: i512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }] };
+  const lm = document.createElement('link'); lm.rel = 'manifest'; lm.href = URL.createObjectURL(new Blob([JSON.stringify(man)], { type: 'application/manifest+json' })); document.head.appendChild(lm);
+  const la = document.createElement('link'); la.rel = 'apple-touch-icon'; la.href = iconPNG(180); document.head.appendChild(la);
+} catch (e) {}
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; refreshSettings(); });
+window.addEventListener('appinstalled', () => { deferredInstall = null; refreshSettings(); });
+function installHelp() {
+  const ua = navigator.userAgent, ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (location.protocol === 'file:') return 'Đang mở bằng file nên trình duyệt không cho cài. Hãy mở game qua https (vd GitHub Pages) rồi bấm lại.';
+  if (ios) return '<b>iPhone / iPad (Safari):</b> bấm nút <b>Chia sẻ</b> (ô vuông có mũi tên lên) → <b>Thêm vào MH chính</b> → <b>Thêm</b>. Game sẽ mở toàn màn hình, không còn thanh Safari.';
+  if (/Android/.test(ua)) return '<b>Android (Chrome):</b> bấm menu <b>⋮</b> → <b>Cài đặt ứng dụng</b> (hoặc <b>Thêm vào màn hình chính</b>) → xác nhận. Game sẽ mở toàn màn hình.';
+  return '<b>Máy tính (Chrome/Edge):</b> bấm biểu tượng <b>cài đặt</b> ở cuối thanh địa chỉ, hoặc menu <b>⋮</b> → <b>Cài đặt Gene Arena</b>.';
+}
+function refreshSettings() {
+  $('swFs').classList.toggle('on', isFs() || isStandalone()); $('swFs').disabled = !fsApi || isStandalone();
+  $('fsNote').textContent = isStandalone() ? 'Đang chạy dạng ứng dụng — luôn toàn màn hình.' : !fsApi ? 'Thiết bị này không hỗ trợ — hãy dùng "Cài lên màn hình chính".' : 'Ẩn thanh trình duyệt để chơi như app.';
+  $('swAuto').classList.toggle('on', !!settings.autoFs); $('swAuto').disabled = !fsApi || isStandalone();
+  $('swDbg').classList.toggle('on', !$('dbg').hidden);
+  const inst = isStandalone();
+  $('btnInstall').disabled = inst; $('btnInstall').textContent = inst ? 'Đã cài' : 'Cài đặt';
+  $('installNote').textContent = inst ? 'Game đang chạy từ màn hình chính.' : 'Mở game bằng biểu tượng riêng, không thanh địa chỉ.';
+}
+function openSettings() { refreshSettings(); $('howto').hidden = true; $('settings').hidden = false; }
+$('btnSettings').onclick = openSettings; $('btnGear').onclick = openSettings;
+$('setClose').onclick = () => { $('settings').hidden = true; };
+$('settings').onclick = e => { if (e.target === $('settings')) $('settings').hidden = true; };
+$('swFs').onclick = () => { if (isFs()) exitFs(); else enterFs(); };
+$('swAuto').onclick = () => { settings.autoFs = !settings.autoFs; saveSettings(); refreshSettings(); };
+$('swDbg').onclick = () => { toggleDbg(); refreshSettings(); };
+$('btnInstall').onclick = async () => {
+  if (deferredInstall) { try { deferredInstall.prompt(); await deferredInstall.userChoice; } catch (e) {} deferredInstall = null; refreshSettings(); return; }
+  const h = $('howto'); h.innerHTML = installHelp(); h.hidden = false;
+};
+
+// ======================= MENU =======================
 (function initTitle() {
   const sw = $('selWave');
-  for (let w = 1; w <= ECONOMY.TOTAL_WAVES; w++) {
-    const o = document.createElement('option'); o.value = w;
-    o.textContent = 'Ải ' + w + (isBossWave(w) ? ' (Boss)' : ''); sw.appendChild(o);
-  }
-  $('selRule').innerHTML = '<option value="">Không có luật</option>' + RULES.map(r => '<option value="' + r.id + '">' + r.name + '</option>').join('');
+  for (let w = 1; w <= ECONOMY.TOTAL_WAVES; w++) { const o = document.createElement('option'); o.value = w; o.textContent = 'Ải ' + w + (isBossWave(w) ? ' (Boss)' : ''); sw.appendChild(o); }
+  $('selRule').innerHTML = '<option value="">Không luật</option>' + RULES.map(r => '<option value="' + r.id + '">' + r.name + '</option>').join('');
 })();
 // ---------- Lưu / tiếp tục (localStorage, bọc try/catch vì có thể bị chặn) ----------
 const SAVE_KEY = 'genearena_save_v1';
@@ -312,34 +555,42 @@ function saveRun() { try { if (run && !run.over) localStorage.setItem(SAVE_KEY, 
 function loadSaved() { try { const t = localStorage.getItem(SAVE_KEY); return t ? parseRun(t) : null; } catch (e) { return null; } }
 function refreshContinue() {
   const sv = loadSaved(), b = $('btnContinue');
-  b.hidden = !sv; if (sv) b.textContent = '⏵ Tiếp tục (ải ' + sv.wave + ' · ❤' + sv.lives + ' · 🪙' + sv.gold + ')';
+  b.hidden = !sv; if (sv) b.textContent = 'Tiếp tục · ải ' + sv.wave + ' · ' + sv.lives + ' mạng · ' + sv.gold + ' vàng';
+  $('btnNewRun').className = sv ? '' : 'gold';
 }
-$('btnContinue').onclick = () => { const sv = loadSaved(); if (!sv) { refreshContinue(); return; } run = sv; mode = 'run'; sel = selG = xfer = null; dbgSeedOverride = null; toast(''); showPrep(); };
+function resetUiState() { sel = selG = xfer = null; tab = 'shop'; sheetMin = false; sheetShown = false; toast(''); }
+$('btnContinue').onclick = () => { const sv = loadSaved(); if (!sv) { refreshContinue(); return; } run = sv; mode = 'run'; dbgSeedOverride = null; resetUiState(); showPrep(); };
 $('btnNewRun').onclick = () => {
   const v = $('inRunSeed').value;
-  run = newRun(v === '' ? undefined : parseInt(v, 10));
-  sel = null; selG = null; xfer = null; toast('');
+  run = newRun(v === '' ? undefined : parseInt(v, 10)); mode = 'run'; resetUiState();
   showPrep();
 };
+$('btnSeed').onclick = () => { $('seedRow').hidden = !$('seedRow').hidden; if (!$('seedRow').hidden) $('inRunSeed').focus(); };
 $('btnAgain').onclick = () => { show('titleScr'); };
 $('btnDice').onclick = () => { $('inSeed').value = Math.floor(Math.random() * 1e6); };
 
 // ======================= CHUẨN BỊ =======================
 function showPrep() { show('prepScr'); renderPrep(); }
-let dbgSeedOverride = null, dbgVerbose = false, lastBattle = null;
+function setSel(p) { sel = p; if (p && selG === null && !xfer) tab = 'unit'; else if (!p && tab === 'unit') tab = 'shop'; }
+function setTab(t) { tab = t; renderPrep(); }
 
+function tokenInner(u) {
+  return ic(u.type) + '<span class="stars">' + (u.star > 1 ? ic('star', 'fill').repeat(u.star) : '') + '</span>' +
+    (u.genes.length || u.shards.length ? '<span class="gp">' + '<i></i>'.repeat(u.genes.length) + '</span>' : '') +
+    (u.shards.length ? '<span class="sp">' + '+'.repeat(u.shards.length) + '</span>' : '');
+}
 function unitEl(u, pos) {
   const d = document.createElement('div');
   d.className = 'unit' + (samePos(sel, pos) ? ' sel' : '');
+  d.setAttribute('style', tcStyle(u.type));
   d.draggable = true;
-  d.innerHTML = '<span class="ic">' + TYPE_ICON[u.type] + '</span><span class="st">' + '★'.repeat(u.star) + '</span><span class="nm">' + UNITS[u.type].name + '</span>' +
-    (u.genes.length ? '<span class="gn">✦' + u.genes.length + '</span>' : '');
-  d.ondragstart = e => { dragSrc = pos; sel = pos; e.dataTransfer.setData('text/plain', 'u'); };
+  d.innerHTML = tokenInner(u);
+  d.ondragstart = e => { dragSrc = pos; e.dataTransfer.setData('text/plain', 'u'); };
   return d;
 }
-function slotEl(pos) {
+function slotEl(pos, alt) {
   const s = document.createElement('div');
-  s.className = 'slot';
+  s.className = 'slot' + (alt ? ' alt' : '');
   const u = getAt(run, pos);
   if (xfer && u && !samePos(xfer, pos)) s.classList.add('xt');
   if (u) s.appendChild(unitEl(u, pos));
@@ -355,120 +606,163 @@ function clickSlot(pos) {
     const src = xfer; xfer = null;
     if (u && !samePos(src, pos)) {
       const r = sellUnit(run, src, { to: pos });
-      toast(r.ok ? 'Đã bán +' + r.price + '🪙 · truyền ký ức +' + r.shard.hp + ' HP, +' + r.shard.atk + ' ATK' : r.msg, r.ok);
-      if (r.ok) sel = null;
-    }
+      toast(r.ok ? 'Đã bán +' + r.price + ' vàng · truyền +' + r.shard.hp + ' HP, +' + r.shard.atk + ' ATK' : r.msg, r.ok);
+      if (r.ok) setSel(null); else setSel(src);
+    } else setSel(src);
     renderPrep(); return;
   }
   if (selG !== null) {   // đang cầm gene từ kho: chạm quân để gắn, chạm ô trống để hủy
-    if (u) { const r = attachGene(run, selG, pos); selG = null; toast(r.ok ? 'Đã gắn gene' : r.msg, r.ok); sel = r.ok ? pos : sel; }
-    else selG = null;
-    renderPrep(); return;
+    if (u) { const r = attachGene(run, selG, pos); toast(r.ok ? 'Đã gắn gene' : r.msg, r.ok); }
+    selG = null; renderPrep(); return;
   }
-  if (!sel) { if (u) { sel = pos; renderPrep(); } return; }
-  if (samePos(sel, pos)) { sel = null; renderPrep(); return; }
+  if (!sel) { if (u) setSel(pos); renderPrep(); return; }
+  if (samePos(sel, pos)) { setSel(null); renderPrep(); return; }
   doMove(sel, pos);
 }
 function doMove(src, dst) {
   const r = moveUnit(run, src, dst);
-  sel = null;
-  toast(r.ok ? '' : r.msg);
-  renderPrep();
+  setSel(null); toast(r.ok ? '' : r.msg); renderPrep();
 }
 
 function renderPrep() {
   if (!run) return;
   saveRun();
-  const w = run.wave, lim = fieldLimit(w);
-  $('prepHud').innerHTML =
-    '<span>Ải <b>' + w + '</b>/' + ECONOMY.TOTAL_WAVES + (isBossWave(w) ? '<span class="tag">BOSS</span>' : '') + '</span>' +
-    '<span>❤ <b>' + run.lives + '</b>/' + ECONOMY.START_LIVES + '</span>' +
-    '<span>🪙 <b>' + run.gold + '</b></span>' +
-    '<span>Chuỗi thắng <b>' + run.streak + '</b></span>' +
-    '<span class="muted">seed ' + run.seed + '</span>';
-  $('prepMsg').textContent = run.lastMsg || '';
-  const fc = fieldCount(run);
-  $('fieldCnt').textContent = '(' + fc + '/' + lim + ')';
+  const w = run.wave, lim = fieldLimit(w), fc = fieldCount(run);
+  $('tWave').textContent = w; $('tBoss').hidden = !isBossWave(w);
+  $('tLives').textContent = run.lives; $('tGold').textContent = run.gold; $('tStreak').textContent = run.streak;
+  $('tStreakWrap').classList.toggle('hot', run.streak >= 3);
+  // đầu sân: trạng thái / gợi ý thao tác
+  const sh = $('stagehead');
+  if (xfer) sh.innerHTML = '<span class="modehint">Chọn quân nhận ký ức <button class="sm" id="hintCancel">Hủy</button></span><span></span>';
+  else if (selG !== null && run.stash[selG]) sh.innerHTML = '<span class="modehint">Chạm quân để gắn “' + esc(GENE_BY_ID[run.stash[selG]].name) + '” <button class="sm" id="hintCancel">Hủy</button></span><span></span>';
+  else sh.innerHTML = '<span><b>Đội hình</b> <span class="' + (fc >= lim ? 'full' : '') + '">' + fc + '/' + lim + '</span></span><span>cột phải = tiền tuyến</span>';
+  if ($('hintCancel')) $('hintCancel').onclick = () => { xfer = null; selG = null; renderPrep(); };
   const board = $('board'); board.innerHTML = '';
-  for (let y = 0; y < CONFIG.ROWS; y++) for (let x = 0; x <= CONFIG.PLAYER_COLS[1]; x++) board.appendChild(slotEl({ zone: 'field', x, y }));
+  for (let y = 0; y < CONFIG.ROWS; y++) for (let x = 0; x <= CONFIG.PLAYER_COLS[1]; x++) board.appendChild(slotEl({ zone: 'field', x, y }, (x + y) % 2));
   const bench = $('bench'); bench.innerHTML = '';
   for (let i = 0; i < ECONOMY.BENCH_SIZE; i++) bench.appendChild(slotEl({ zone: 'bench', i }));
-  renderInfo(); renderShop(); renderEnemy(); renderRuleObj(); renderMarket(); renderGeneReward(); renderStash(); renderMerge();
-  const busy = runBusy(run);
-  $('btnStart').disabled = fc === 0 || busy;
-  $('btnStart').textContent = fc === 0 ? 'Cần ít nhất 1 quân trên sân' : busy ? (run.market ? 'Chợ đen: mua hoặc từ chối trước' : run.mergeQueue.length ? 'Chọn gene giữ lại khi gộp sao' : 'Chọn gene thưởng trước (hoặc bỏ qua)') : '⚔ Bắt đầu trận ải ' + w;
+  const lc = document.createElement('div'); lc.className = 'lblcell'; lc.innerHTML = '<span class="lbl">Dự bị</span>'; bench.appendChild(lc);
+  renderStrip(); renderTabs(); renderPane(); renderSheet(); renderMerge();
+  const busy = runBusy(run), btn = $('btnStart');
+  btn.disabled = fc === 0 && !busy;
+  btn.textContent = busy ? (run.geneChoice || run.market ? 'Mở phần thưởng' : 'Chọn gene giữ lại') : fc === 0 ? 'Đặt ít nhất 1 quân lên sân' : 'Bắt đầu ải ' + w;
+  btn.className = busy ? '' : 'gold';
+  if (busy && !(run.geneChoice || run.market)) btn.disabled = true;
+}
+function renderStrip() {
+  const cur = ruleForWave(run, run.wave), nx = nextRule(run, run.wave), o = objectiveForWave(run, run.wave), rw = o.reward, parts = [];
+  if (rw.gold) parts.push('+' + rw.gold); if (rw.extraGeneChoice) parts.push('+1 gene'); if (rw.rareGene) parts.push('gene Hiếm');
+  let h = '';
+  if (cur) h += '<div class="chip rule" data-go="enemy"><span><span class="pre">Luật · </span><b>' + esc(RULES_BY_ID[cur].name) + '</b></span></div>';
+  else if (nx) h += '<div class="chip" data-go="enemy"><span>Ải ' + nx.start + ' · <b>' + esc(RULES_BY_ID[nx.id].name) + '</b></span></div>';
+  h += '<div class="chip" data-go="enemy"><span><span class="pre">Nhiệm vụ · </span><b>' + esc(o.name) + '</b></span><span class="rw">' + parts.join(' ') + '</span></div>';
+  const st = $('strip'); st.innerHTML = h;
+  st.querySelectorAll('.chip').forEach(c => c.onclick = () => setTab('enemy'));
+}
+function renderTabs() {
+  const defs = [['shop', 'Cửa hàng', 0], ['gene', 'Gene', run.stash.length], ['unit', 'Quân', 0], ['enemy', 'Địch', 0]];
+  const t = $('tabs'); t.innerHTML = '';
+  for (const [k, name, n] of defs) {
+    const b = document.createElement('button'); b.className = tab === k ? 'act' : '';
+    b.innerHTML = name + (n ? '<span class="bd hot">' + n + '</span>' : '');
+    b.onclick = () => { tab = k; renderPrep(); }; t.appendChild(b);
+  }
+}
+function renderPane() {
+  const p = $('panel'); p.innerHTML = '';
+  if (tab === 'shop') paneShop(p); else if (tab === 'gene') paneGene(p); else if (tab === 'unit') paneUnit(p); else paneEnemy(p);
+}
+function paneShop(p) {
+  p.innerHTML = '<div class="pane-head"><span class="t"><b>Cửa hàng</b> · mua ' + ECONOMY.BUY_COST + ' · bán ' + [1, 2, 3].map(s => ECONOMY.SELL_UNIT[s]).join('/') + '</span><button class="sm" id="btnReroll">Làm mới ' + ECONOMY.REROLL_COST + ' ' + ic('coin') + '</button></div><div id="shop"></div>';
   $('btnReroll').disabled = run.gold < ECONOMY.REROLL_COST;
-}
-
-function renderInfo() {
-  const box = $('info'), u = sel ? getAt(run, sel) : null;
-  if (!u) { sel = null; box.innerHTML = '<span class="muted">Chạm vào quân để xem chỉ số và bán. Chạm tiếp 1 ô để di chuyển / đổi chỗ.</span>'; return; }
-  if (xfer && !getAt(run, xfer)) xfer = null;
-  const st = unitStats(u.type, u.star, u.shards), price = ECONOMY.SELL_UNIT[u.star];
-  box.innerHTML = '<h3>' + TYPE_ICON[u.type] + ' ' + st.name + ' ' + '★'.repeat(u.star) + '</h3>' +
-    '<div class="stats">HP <b>' + st.hp + '</b> · ATK <b>' + st.atk + '</b> · đánh mỗi ' + st.cd + 's · tầm ' + st.range + '</div>' +
-    '<div class="stats">' + esc(st.note) + '</div>' +
-    '<div class="stats">Gene (' + u.genes.length + '/' + CONFIG.MAX_GENES_PER_UNIT + ')' + (u.shards.length ? ' · mảnh ký ức ' + u.shards.length + '/' + CONFIG.MEMORY_MAX : '') + '</div>';
-  const ul = document.createElement('div'); ul.className = 'ulist';
-  u.genes.forEach((gid, gi) => {
-    const g = GENE_BY_ID[gid], row = document.createElement('div'); row.className = 'urow r-' + g.rarity; row.style.borderColor = '';
-    row.innerHTML = '<div class="t"><b class="gn">' + esc(g.name) + '</b> <span class="muted">' + RAR_VI[g.rarity] + '</span><br>' + esc(g.desc) + '</div>';
-    const b2 = document.createElement('button'); b2.textContent = 'Gỡ';
-    b2.onclick = () => { const r = detachGene(run, sel, gi); toast(r.ok ? '' : r.msg); renderPrep(); };
-    row.appendChild(b2); ul.appendChild(row);
-  });
-  if (!u.genes.length) ul.innerHTML = '<span class="muted">Chưa có gene. Chạm gene trong kho để gắn.</span>';
-  box.appendChild(ul);
-  const b = document.createElement('button'); b.className = 'danger'; b.textContent = 'Bán +' + price + '🪙';
-  b.onclick = () => { const r = sellUnit(run, sel); sel = null; toast(r.ok ? 'Đã bán +' + r.price + '🪙' + (r.lost ? ' (mất ' + r.lost + ' gene vì kho đầy)' : '') : r.msg, r.ok); renderPrep(); };
-  box.appendChild(b);
-  const t = document.createElement('button'); t.textContent = 'Bán + Truyền ký ức';
-  t.title = '+25% HP/ATK gốc của quân này cho 1 quân khác (tối đa ' + CONFIG.MEMORY_MAX + ' mảnh/quân)';
-  t.onclick = () => { if (listUnits(run).length < 2) { toast('Cần quân khác để nhận ký ức'); return; } xfer = sel; renderPrep(); };
-  box.appendChild(t);
-}
-
-function renderShop() {
-  const box = $('shop'); box.innerHTML = '';
+  $('btnReroll').onclick = () => { const r = rerollShop(run); toast(r.ok ? '' : r.msg); renderPrep(); };
+  const box = $('shop');
   run.shop.forEach((type, i) => {
     const c = document.createElement('div');
-    if (!type) { c.className = 'card sold'; c.innerHTML = '<div class="ic">·</div><div class="sp">đã mua</div>'; box.appendChild(c); return; }
+    if (!type) { c.className = 'card sold'; c.innerHTML = '<div class="tk" style="--tc:var(--surf3)"></div><div class="nm">·</div><div class="sx">đã mua</div>'; box.appendChild(c); return; }
     const st = unitStats(type, 1), cant = run.gold < ECONOMY.BUY_COST;
-    c.className = 'card' + (cant ? ' off' : '');
-    c.innerHTML = '<div class="ic">' + TYPE_ICON[type] + '</div><div class="nm">' + st.name + '</div>' +
-      '<div class="sp">HP ' + st.hp + ' · ATK ' + st.atk + '</div><div class="sp">⏱' + st.cd + 's · 🎯' + st.range + '</div><div class="pr">🪙 ' + ECONOMY.BUY_COST + '</div>';
+    c.className = 'card' + (cant ? ' off' : ''); c.setAttribute('style', tcStyle(type));
+    c.innerHTML = '<div class="tk">' + ic(type) + '</div><div class="nm">' + st.name + '</div><div class="sx">HP ' + st.hp + '<br>ATK ' + st.atk + '</div><div class="pr">' + ic('coin') + ECONOMY.BUY_COST + '</div>';
     c.title = st.note;
     c.onclick = () => {
       const r = buyUnit(run, i);
       if (!r.ok) { toast(r.msg); return; }
-      sel = null;
-      toast(r.merged.length ? '✨ Gộp sao: ' + r.merged.map(m => UNITS[m.type].name + ' ' + '★'.repeat(m.star)).join(', ') : '', true);
+      setSel(null);
+      toast(r.merged.length ? 'Gộp sao: ' + r.merged.map(m => UNITS[m.type].name + ' ' + m.star + '★').join(', ') : '', true);
       renderPrep();
     };
     box.appendChild(c);
   });
 }
-$('btnReroll').onclick = () => { const r = rerollShop(run); toast(r.ok ? '' : r.msg); renderPrep(); };
-
-function renderEnemy() {
-  const defs = enemyForWave(run), mult = defs[0].mult;
-  $('enemyTtl').textContent = 'Địch ải ' + run.wave + (isBossWave(run.wave) ? ' (BOSS)' : '');
-  $('enemyNote').textContent = defs.length + ' quân · chỉ số ×' + mult.toFixed(2);
-  const box = $('enemyPrev'); box.innerHTML = '';
-  const order = defs.slice().sort((a, b) => b.x - a.x);
-  for (const d of order) {
-    const c = document.createElement('span');
-    const rare = d.genes.some(g => GENE_BY_ID[g].rarity !== 'common');
-    c.className = 'chip' + (rare ? ' rare' : '');
-    c.textContent = TYPE_ICON[d.type] + (d.star > 1 ? '★' + d.star : '') + (d.genes.length ? ' ✦' + d.genes.length : '');
-    c.title = UNITS[d.type].name + ' sao ' + d.star + (d.genes.length ? ' · ' + d.genes.map(g => GENE_BY_ID[g].name).join(', ') : '');
-    box.appendChild(c);
+function paneGene(p) {
+  p.innerHTML = '<div class="pane-head"><span class="t"><b>Kho gene</b> ' + run.stash.length + '/' + ECONOMY.GENE_STASH_MAX + ' · chạm gene rồi chạm quân để gắn</span></div><div id="stash"></div><div class="ginfo" id="ginfo"></div>';
+  const box = $('stash');
+  for (let i = 0; i < ECONOMY.GENE_STASH_MAX; i++) {
+    const gid = run.stash[i], d = document.createElement('div');
+    if (!gid) { d.className = 'gslot'; d.textContent = '·'; box.appendChild(d); continue; }
+    const g = GENE_BY_ID[gid];
+    d.className = 'gslot has r-' + g.rarity + (selG === i ? ' sel' : ''); d.textContent = g.name; d.title = g.desc;
+    d.onclick = () => {
+      if (sel && getAt(run, sel)) { const r = attachGene(run, i, sel); toast(r.ok ? 'Đã gắn gene' : r.msg, r.ok); selG = null; }
+      else selG = (selG === i ? null : i);
+      renderPrep();
+    };
+    box.appendChild(d);
   }
+  const gi = $('ginfo');
+  if (selG !== null && run.stash[selG]) {
+    const g = GENE_BY_ID[run.stash[selG]];
+    gi.innerHTML = '<span><b class="r-' + g.rarity + '"><span class="gn">' + esc(g.name) + '</span></b> — ' + esc(g.desc) + '</span>';
+    const b = document.createElement('button'); b.className = 'sm danger'; b.innerHTML = 'Bán +' + ECONOMY.SELL_GENE + ' ' + ic('coin');
+    b.onclick = () => { sellGene(run, selG); selG = null; renderPrep(); };
+    gi.appendChild(b);
+  } else { selG = null; gi.innerHTML = '<span class="muted">' + (sel && getAt(run, sel) ? 'Đang chọn 1 quân: chạm gene để gắn ngay.' : run.stash.length ? 'Chạm 1 gene để xem mô tả.' : 'Chưa có gene. Gene thưởng sau mỗi trận.') + '</span>'; }
+}
+function paneUnit(p) {
+  const u = sel ? getAt(run, sel) : null;
+  if (!u) { sel = null; p.innerHTML = '<div class="empty">Chạm vào một quân trên sân để xem chỉ số, gắn gene, bán hoặc chuyển chỗ.</div>'; return; }
+  const st = unitStats(u.type, u.star, u.shards), price = ECONOMY.SELL_UNIT[u.star];
+  p.innerHTML = '<div class="uhead" style="' + tcStyle(u.type) + '"><div class="tk">' + ic(u.type) + '</div><div><div class="nm">' + st.name + ' <span class="st">' + ic('star', 'fill').repeat(u.star) + '</span></div>' +
+    '<div class="sub">HP <b>' + st.hp + '</b> · ATK <b>' + st.atk + '</b> · đánh mỗi ' + st.cd + 's · tầm ' + st.range + (u.shards.length ? ' · ký ức ' + u.shards.length + '/' + CONFIG.MEMORY_MAX : '') + '</div></div></div>' +
+    '<div class="muted" style="margin:-2px 0 8px">' + esc(st.note) + '</div><div id="ulist"></div><div class="uact" id="uact"></div>';
+  const ul = $('ulist');
+  u.genes.forEach((gid, gi) => {
+    const g = GENE_BY_ID[gid], row = document.createElement('div'); row.className = 'urow r-' + g.rarity;
+    row.innerHTML = '<div class="t"><b>' + esc(g.name) + '</b> <span class="muted">' + RAR_VI[g.rarity] + '</span><br>' + esc(g.desc) + '</div>';
+    const b = document.createElement('button'); b.className = 'sm'; b.textContent = 'Gỡ';
+    b.onclick = () => { const r = detachGene(run, sel, gi); toast(r.ok ? '' : r.msg); renderPrep(); };
+    row.appendChild(b); ul.appendChild(row);
+  });
+  if (!u.genes.length) ul.innerHTML = '<div class="muted">Chưa có gene (tối đa ' + CONFIG.MAX_GENES_PER_UNIT + ').</div>';
+  const act = $('uact');
+  if (u.genes.length < CONFIG.MAX_GENES_PER_UNIT && run.stash.length) { const b = document.createElement('button'); b.className = 'sm'; b.textContent = 'Gắn gene…'; b.onclick = () => setTab('gene'); act.appendChild(b); }
+  const sb = document.createElement('button'); sb.className = 'sm danger'; sb.innerHTML = 'Bán +' + price + ' ' + ic('coin');
+  sb.onclick = () => { const r = sellUnit(run, sel); setSel(null); toast(r.ok ? 'Đã bán +' + r.price + ' vàng' + (r.lost ? ' (mất ' + r.lost + ' gene vì kho đầy)' : '') : r.msg, r.ok); renderPrep(); };
+  const tb = document.createElement('button'); tb.className = 'sm'; tb.textContent = 'Bán + truyền ký ức'; tb.title = '+25% HP/ATK gốc cho 1 quân khác (tối đa ' + CONFIG.MEMORY_MAX + ' mảnh/quân)';
+  tb.onclick = () => { if (listUnits(run).length < 2) { toast('Cần quân khác để nhận ký ức'); return; } xfer = sel; renderPrep(); };
+  act.appendChild(sb); act.appendChild(tb);
+}
+function paneEnemy(p) {
+  const w = run.wave, cur = ruleForWave(run, w), nx = nextRule(run, w), o = objectiveForWave(run, w), rw = o.reward, parts = [];
+  if (rw.gold) parts.push('+' + rw.gold + ' vàng'); if (rw.extraGeneChoice) parts.push('+1 lựa chọn gene'); if (rw.rareGene) parts.push('1 gene Hiếm');
+  let h = '';
+  if (cur) { const end = ruleSchedule(run).find(x => x.id === cur).end; h += '<div class="blk rule"><div class="h">Luật thế giới · đến hết ải ' + end + '</div><b>' + esc(RULES_BY_ID[cur].name) + '</b> — ' + esc(RULES_BY_ID[cur].desc) + '</div>'; }
+  if (nx) h += '<div class="blk"><div class="h">Sắp tới · ải ' + nx.start + ' (còn ' + nx.in + ' ải)</div><b>' + esc(RULES_BY_ID[nx.id].name) + '</b> — ' + esc(RULES_BY_ID[nx.id].desc) + '</div>';
+  h += '<div class="blk"><div class="h">Nhiệm vụ phụ · thưởng ' + parts.join(', ') + '</div><b>' + esc(o.name) + '</b> — ' + esc(o.desc) + '</div>';
+  const defs = enemyForWave(run);
+  h += '<div class="blk"><div class="h">Địch ải ' + w + (isBossWave(w) ? ' · BOSS' : '') + ' · ' + defs.length + ' quân · chỉ số ×' + defs[0].mult.toFixed(2) + '</div><div class="echips">' +
+    defs.slice().sort((a, b) => b.x - a.x).map(d => {
+      const rare = d.genes.some(g => GENE_BY_ID[g].rarity !== 'common');
+      return '<span class="ech' + (rare ? ' rare' : '') + '" style="' + tcStyle(d.type) + '" title="' + esc(UNITS[d.type].name + ' sao ' + d.star + (d.genes.length ? ' · ' + d.genes.map(g => GENE_BY_ID[g].name).join(', ') : '')) + '"><span class="tk">' + ic(d.type) + '</span>' + (d.star > 1 ? d.star + '★' : '') + (d.genes.length ? ' <i>✦' + d.genes.length + '</i>' : '') + '</span>';
+    }).join('') + '</div></div>';
+  p.innerHTML = h;
 }
 
 $('btnStart').onclick = () => {
-  if (!run || fieldCount(run) === 0) return;
-  mode = 'run'; sel = null;
+  if (!run) return;
+  if (runBusy(run)) { if (run.geneChoice || run.market) { sheetMin = false; sheetShown = false; renderPrep(); } return; }
+  if (fieldCount(run) === 0) return;
+  mode = 'run'; setSel(null); xfer = selG = null;
   const st = buildBattleState(run), seed = dbgSeedOverride != null ? dbgSeedOverride : battleSeed(run);
   const res = simulateBattle(st, seed);   // thuần logic
   res.wave = run.wave;
@@ -477,32 +771,75 @@ $('btnStart').onclick = () => {
   startReplay(res);
 };
 
-// ======================= M5 UI: luật / nhiệm vụ / chợ đen =======================
-function renderRuleObj() {
-  const rb = $('ruleBox'), ob = $('objBox'); rb.innerHTML = ''; ob.innerHTML = '';
-  const add = (box, cls, html) => { const d = document.createElement('div'); d.className = 'banner ' + cls; d.innerHTML = html; box.appendChild(d); };
-  const cur = ruleForWave(run, run.wave), nx = nextRule(run, run.wave);
-  if (cur) { const r = RULES_BY_ID[cur], end = ruleSchedule(run).find(x => x.id === cur).end; add(rb, 'rule', '⚠ <b>Luật thế giới: ' + esc(r.name) + '</b> (đến hết ải ' + end + ')<br>' + esc(r.desc)); }
-  if (nx) { const r = RULES_BY_ID[nx.id]; add(rb, 'next', 'Sắp tới — ải ' + nx.start + ' (còn ' + nx.in + ' ải): <b>' + esc(r.name) + '</b> — ' + esc(r.desc)); }
-  const o = objectiveForWave(run, run.wave), rw = o.reward, parts = [];
-  if (rw.gold) parts.push('+' + rw.gold + '🪙'); if (rw.extraGeneChoice) parts.push('+' + rw.extraGeneChoice + ' lựa chọn gene'); if (rw.rareGene) parts.push('1 gene Hiếm');
-  add(ob, 'obj', '🎯 <b>Nhiệm vụ ải ' + run.wave + ': ' + esc(o.name) + '</b> — ' + esc(o.desc) + '<br>Thưởng: ' + parts.join(', '));
-  if (xfer) add(ob, 'xfer', '🧠 Chọn quân nhận ký ức (chạm ô khác để hủy)');
+// ======================= SHEET THƯỞNG (gene thưởng + chợ đen) =======================
+function geneCard(gid, extra) {
+  const g = GENE_BY_ID[gid], d = document.createElement('div');
+  d.className = 'gcard r-' + g.rarity + (extra || '');
+  d.innerHTML = '<div class="gh"><span class="gn">' + esc(g.name) + '</span><span class="rar">' + RAR_VI[g.rarity] + '</span></div><div class="ds">' + esc(g.desc) + '</div>';
+  return d;
 }
-function renderMarket() {
-  const box = $('marketBox'), m = run.market;
-  if (!m) { box.hidden = true; return; }
-  box.hidden = false; box.innerHTML = '';
-  const t = document.createElement('div'); t.className = 'ttl'; t.innerHTML = '<b>🕯 Chợ đen</b> <span class="muted">1 gene Nguyền rủa — trả 1 mạng</span>';
-  box.appendChild(t);
-  const c = geneCard(m.gene, ' cursedbuy'); c.style.cursor = 'default'; box.appendChild(c);
-  const row = document.createElement('div'); row.className = 'btns'; row.style.marginTop = '6px';
-  const buy = document.createElement('button'); buy.className = 'danger'; buy.textContent = 'Trả 1 ❤ để nhận';
-  buy.disabled = run.lives <= 1 || run.stash.length >= ECONOMY.GENE_STASH_MAX;
-  buy.title = run.lives <= 1 ? 'Chỉ còn 1 mạng' : run.stash.length >= ECONOMY.GENE_STASH_MAX ? 'Kho gene đầy' : '';
-  buy.onclick = () => { const r = buyMarket(run); toast(r.ok ? 'Đã trả 1 mạng, gene vào kho' : r.msg, r.ok); renderPrep(); };
-  const no = document.createElement('button'); no.textContent = 'Từ chối'; no.onclick = () => { refuseMarket(run); renderPrep(); };
-  row.appendChild(buy); row.appendChild(no); box.appendChild(row);
+function renderSheet() {
+  const el = $('sheet'), gc = run.geneChoice, mk = run.market;
+  if (!(gc || mk) || sheetMin) { el.hidden = true; sheetShown = false; return; }
+  el.hidden = false; el.innerHTML = '';
+  const box = document.createElement('div'); box.className = 'box' + (sheetShown ? '' : ' anim'); sheetShown = true;
+  const wv = gc ? gc.wave : mk.wave;
+  box.innerHTML = '<h3>Phần thưởng sau ải ' + wv + '</h3><div class="sub">' + esc(run.lastMsg || '') + '</div>';
+  if (mk) {
+    const m = document.createElement('div'); m.className = 'mk';
+    m.innerHTML = '<div class="lbl">Chợ đen · trả 1 mạng lấy 1 gene Nguyền rủa</div>';
+    m.appendChild(geneCard(mk.gene));
+    const row = document.createElement('div'); row.className = 'btns';
+    const buy = document.createElement('button'); buy.className = 'danger'; buy.innerHTML = 'Trả 1 ' + ic('heart', 'fill') + ' để nhận';
+    buy.disabled = run.lives <= 1 || run.stash.length >= ECONOMY.GENE_STASH_MAX;
+    buy.onclick = () => { const r = buyMarket(run); toast(r.ok ? 'Đã trả 1 mạng, gene vào kho' : r.msg, r.ok); renderPrep(); };
+    const no = document.createElement('button'); no.textContent = 'Từ chối'; no.onclick = () => { refuseMarket(run); renderPrep(); };
+    row.appendChild(buy); row.appendChild(no); m.appendChild(row);
+    if (run.lives <= 1) { const w = document.createElement('div'); w.className = 'muted'; w.style.marginTop = '6px'; w.textContent = 'Chỉ còn 1 mạng — không thể trả.'; m.appendChild(w); }
+    else if (run.stash.length >= ECONOMY.GENE_STASH_MAX) { const w = document.createElement('div'); w.className = 'muted'; w.style.marginTop = '6px'; w.textContent = 'Kho gene đầy.'; m.appendChild(w); }
+    box.appendChild(m);
+  }
+  if (gc) {
+    const lb = document.createElement('div'); lb.className = 'lbl'; lb.style.margin = '2px 0 8px'; lb.textContent = 'Chọn 1 trong ' + gc.options.length + ' gene'; box.appendChild(lb);
+    const opts = document.createElement('div'); opts.className = 'opts';
+    gc.options.forEach((gid, i) => {
+      const c = geneCard(gid);
+      c.onclick = () => { const r = pickGene(run, i); toast(r.ok ? 'Đã nhận gene vào kho' : r.msg, r.ok); renderPrep(); };
+      opts.appendChild(c);
+    });
+    box.appendChild(opts);
+    if (run.stash.length >= ECONOMY.GENE_STASH_MAX) { const w = document.createElement('div'); w.className = 'muted'; w.style.cssText = 'color:#f08c86;margin:-6px 0 10px'; w.textContent = 'Kho gene đầy — gắn hoặc bán bớt gene để nhận thêm.'; box.appendChild(w); }
+    const row = document.createElement('div'); row.className = 'btns';
+    const rr = document.createElement('button'); rr.innerHTML = gc.rerolled ? 'Đã đổi' : 'Đổi gene ' + ECONOMY.GENE_REROLL_COST + ' ' + ic('coin');
+    rr.disabled = gc.rerolled || run.gold < ECONOMY.GENE_REROLL_COST; rr.onclick = () => { const r = rerollGeneChoice(run); toast(r.ok ? '' : r.msg); renderPrep(); };
+    const sk = document.createElement('button'); sk.textContent = 'Bỏ qua'; sk.onclick = () => { skipGene(run); renderPrep(); };
+    row.appendChild(rr); row.appendChild(sk); box.appendChild(row);
+  }
+  const mn = document.createElement('button'); mn.className = 'ghost'; mn.style.cssText = 'width:100%;margin-top:8px'; mn.textContent = 'Xem đội hình trước';
+  mn.onclick = () => { sheetMin = true; renderPrep(); };
+  box.appendChild(mn);
+  el.appendChild(box);
+}
+// Hộp chọn gene khi gộp sao (tối đa 2 gene giữ lại; gene bỏ về kho nếu còn chỗ)
+let mergeSel = null;
+function renderMerge() {
+  const m = $('modal');
+  if (!run.mergeQueue.length) { m.hidden = true; mergeSel = null; return; }
+  const item = run.mergeQueue[0];
+  if (!mergeSel || mergeSel.key !== run.mergeQueue.length + ':' + item.uid) mergeSel = { key: run.mergeQueue.length + ':' + item.uid, keep: item.pool.map((_, i) => i).slice(0, CONFIG.MAX_GENES_PER_UNIT) };
+  m.hidden = false; m.innerHTML = '';
+  const box = document.createElement('div'); box.className = 'box';
+  box.innerHTML = '<h3>Gộp sao — giữ tối đa ' + CONFIG.MAX_GENES_PER_UNIT + ' gene</h3><div class="sub">Gene không chọn sẽ về kho (hết chỗ thì mất).</div>';
+  const opts = document.createElement('div'); opts.className = 'opts';
+  item.pool.forEach((gid, i) => {
+    const c = geneCard(gid, mergeSel.keep.includes(i) ? ' picked' : '');
+    c.onclick = () => { const k = mergeSel.keep, at = k.indexOf(i); if (at >= 0) k.splice(at, 1); else if (k.length < CONFIG.MAX_GENES_PER_UNIT) k.push(i); renderMerge(); };
+    opts.appendChild(c);
+  });
+  box.appendChild(opts);
+  const ok = document.createElement('button'); ok.className = 'gold'; ok.style.width = '100%'; ok.textContent = 'Xác nhận (' + mergeSel.keep.length + '/' + CONFIG.MAX_GENES_PER_UNIT + ')';
+  ok.onclick = () => { const r = resolveMerge(run, mergeSel.keep); mergeSel = null; toast(r.lost ? 'Mất ' + r.lost + ' gene vì kho đầy' : ''); renderPrep(); };
+  box.appendChild(ok); m.appendChild(box);
 }
 
 // ======================= AUTO-PLAYTEST UI =======================
@@ -515,7 +852,7 @@ function renderPlaytest(acc, ms) {
   h += '<div class="ttl"><b>Theo ải</b> <span class="muted">(bot không bán quân/không reroll — chỉ là mốc so sánh)</span></div><div class="scroll"><table class="t"><tr><th>Ải</th><th>Run đến</th><th>Trận</th><th>Thắng</th><th>Hòa</th><th>TB giây</th></tr>' +
     waves.map(w => { const W = acc.waves[w]; return '<tr><td>' + w + (isBossWave(w) ? ' 👑' : '') + '</td><td>' + W.runsReached + '</td><td>' + W.fights + '</td>' + pctCell(pct(W.wins, W.fights)) + '<td>' + (pct(W.draws, W.fights) ?? '-') + '%</td><td>' + (W.fights ? (W.sec / W.fights).toFixed(1) : '-') + '</td></tr>'; }).join('') + '</table></div>';
   h += '<div class="ttl"><b>Theo loại quân</b> <span class="muted">(trận có mặt trên sân)</span></div><div class="scroll"><table class="t"><tr><th>Quân</th><th>Lượt ra sân</th><th>Thắng</th><th>Sao TB</th></tr>' +
-    Object.keys(acc.units).map(t => { const U = acc.units[t]; return '<tr><td>' + TYPE_ICON[t] + ' ' + UNITS[t].name + '</td><td>' + U.fights + '</td>' + pctCell(pct(U.wins, U.fights)) + '<td>' + (U.fights ? (U.star / U.fights).toFixed(2) : '-') + '</td></tr>'; }).join('') + '</table></div>';
+    Object.keys(acc.units).map(t => { const U = acc.units[t]; return '<tr><td>' + UNITS[t].name + '</td><td>' + U.fights + '</td>' + pctCell(pct(U.wins, U.fights)) + '<td>' + (U.fights ? (U.star / U.fights).toFixed(2) : '-') + '</td></tr>'; }).join('') + '</table></div>';
   const gl = GENES.map(g => Object.assign({ g }, acc.genes[g.id])).sort((a, b) => (pct(b.wins, b.fights) ?? -1) - (pct(a.wins, a.fights) ?? -1));
   h += '<div class="ttl"><b>Theo gene</b> <span class="muted">(sắp theo tỉ lệ thắng; mẫu nhỏ thì nhiễu)</span></div><div class="scroll"><table class="t"><tr><th>Gene</th><th>Hiếm</th><th>Nhặt</th><th>Trận mang</th><th>Thắng</th><th>Kích/trận</th><th>Dmg/trận</th></tr>' +
     gl.map(x => '<tr><td class="r-' + x.g.rarity + '"><span class="gn" style="font-weight:700">' + esc(x.g.name) + '</span></td><td>' + RAR_VI[x.g.rarity] + '</td><td>' + x.picked + '</td><td>' + x.fights + '</td>' + pctCell(pct(x.wins, x.fights)) + '<td>' + (x.fights ? (x.trig / x.fights).toFixed(1) : '-') + '</td><td>' + (x.fights ? Math.round(x.dmg / x.fights) : '-') + '</td></tr>').join('') + '</table></div>';
@@ -528,6 +865,7 @@ function renderPlaytest(acc, ms) {
 let testing = false;
 $('btnPlaytest').onclick = () => {
   if (testing) return;
+  $('settings').hidden = true;
   const n = Math.max(1, Math.min(1000, parseInt($('inBotRuns').value, 10) || 100)), base = Math.floor(Math.random() * 1e6), t0 = performance.now();
   testing = true; show('testScr'); $('testOut').innerHTML = ''; $('testNote').textContent = 'seed gốc ' + base; $('prog').firstChild.style.width = '0';
   autoPlaytest(n, base, (d, tot) => { $('prog').firstChild.style.width = (d / tot * 100) + '%'; $('testNote').textContent = 'seed gốc ' + base + ' · ' + d + '/' + tot; },
@@ -543,8 +881,8 @@ function renderDbg() {
     (L ? '<br>Trận gần nhất: ải ' + L.wave + ' · seed ' + L.seed + ' · hash ' + L.hash + ' · ' + L.res.winner : '<br>Chưa có trận nào');
   $('dbgRerun').disabled = !L;
 }
-function toggleDbg() { $('dbg').hidden = !$('dbg').hidden; if (!$('dbg').hidden) renderDbg(); }
-$('btnDbg').onclick = toggleDbg; $('dbgClose').onclick = toggleDbg;
+function toggleDbg() { $('dbg').hidden = !$('dbg').hidden; if (!$('dbg').hidden) renderDbg(); refreshSettings(); }
+$('dbgClose').onclick = toggleDbg;
 document.addEventListener('keydown', e => { if ((e.key === 'd' || e.key === 'D') && !e.ctrlKey && !e.metaKey && !e.altKey && !/INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ''))) toggleDbg(); });
 $('dbgApply').onclick = () => { const v = $('dbgSeed').value; dbgSeedOverride = v === '' ? null : (parseInt(v, 10) >>> 0); renderDbg(); };
 $('dbgClear').onclick = () => { dbgSeedOverride = null; $('dbgSeed').value = ''; renderDbg(); };
@@ -563,111 +901,36 @@ $('dbgCopy').onclick = () => {
   try { navigator.clipboard.writeText(t).then(() => { $('dbgOut').textContent = 'Đã sao chép ' + t.length + ' ký tự'; }, () => { $('dbgOut').textContent = t; }); } catch (e) { $('dbgOut').textContent = t; }
 };
 
-// ======================= GENE UI (M4) =======================
-function geneCard(gid, extra) {
-  const g = GENE_BY_ID[gid], d = document.createElement('div');
-  d.className = 'gcard r-' + g.rarity + (extra || '');
-  d.innerHTML = '<span class="gn">' + esc(g.name) + '</span><span class="rar">' + RAR_VI[g.rarity] + '</span><div class="ds">' + esc(g.desc) + '</div>';
-  return d;
-}
-function renderGeneReward() {
-  const box = $('geneReward'), gc = run.geneChoice;
-  if (!gc) { box.hidden = true; return; }
-  box.hidden = false; box.innerHTML = '';
-  const t = document.createElement('div'); t.className = 'ttl';
-  t.innerHTML = '<b>🎁 Phần thưởng gene — chọn 1 trong ' + gc.options.length + '</b>';
-  const rr = document.createElement('button'); rr.textContent = '🔄 Đổi 3 gene mới (' + ECONOMY.GENE_REROLL_COST + '🪙)';
-  rr.disabled = gc.rerolled || run.gold < ECONOMY.GENE_REROLL_COST; if (gc.rerolled) rr.textContent = 'Đã đổi lần này';
-  rr.onclick = () => { const r = rerollGeneChoice(run); toast(r.ok ? '' : r.msg); renderPrep(); };
-  const sk = document.createElement('button'); sk.textContent = 'Bỏ qua'; sk.onclick = () => { skipGene(run); renderPrep(); };
-  t.appendChild(rr); t.appendChild(sk); box.appendChild(t);
-  const opts = document.createElement('div'); opts.className = 'opts';
-  gc.options.forEach((gid, i) => {
-    const c = geneCard(gid);
-    c.onclick = () => { const r = pickGene(run, i); toast(r.ok ? 'Đã nhận gene vào kho' : r.msg, r.ok); renderPrep(); };
-    opts.appendChild(c);
-  });
-  box.appendChild(opts);
-  if (run.stash.length >= ECONOMY.GENE_STASH_MAX) { const w = document.createElement('div'); w.className = 'muted'; w.style.color = '#ff9c9c'; w.textContent = 'Kho gene đầy — gắn hoặc bán bớt gene để nhận gene mới.'; box.appendChild(w); }
-}
-function renderStash() {
-  const box = $('stash'); box.innerHTML = '';
-  $('stashCnt').textContent = '(' + run.stash.length + '/' + ECONOMY.GENE_STASH_MAX + ')';
-  for (let i = 0; i < ECONOMY.GENE_STASH_MAX; i++) {
-    const gid = run.stash[i], d = document.createElement('div');
-    if (!gid) { d.className = 'gslot'; d.textContent = '·'; box.appendChild(d); continue; }
-    const g = GENE_BY_ID[gid];
-    d.className = 'gslot has r-' + g.rarity + (selG === i ? ' sel' : ''); d.style.borderWidth = '2px'; d.style.borderStyle = 'solid';
-    d.textContent = g.name; d.title = g.desc;
-    d.onclick = () => {
-      if (sel && getAt(run, sel)) { const r = attachGene(run, i, sel); toast(r.ok ? 'Đã gắn gene' : r.msg, r.ok); selG = null; }
-      else selG = (selG === i ? null : i);
-      renderPrep();
-    };
-    box.appendChild(d);
-  }
-  const gi = $('ginfo'); gi.innerHTML = '';
-  if (selG !== null && run.stash[selG]) {
-    const g = GENE_BY_ID[run.stash[selG]];
-    gi.innerHTML = '<b class="r-' + g.rarity + '" style="border:0"><span class="gn">' + esc(g.name) + '</span></b> <span class="muted">' + RAR_VI[g.rarity] + '</span> — ' + esc(g.desc) + ' <span class="muted">(chạm 1 quân để gắn)</span> ';
-    const b = document.createElement('button'); b.className = 'danger'; b.textContent = 'Bán +' + ECONOMY.SELL_GENE + '🪙';
-    b.onclick = () => { sellGene(run, selG); selG = null; renderPrep(); };
-    gi.appendChild(b);
-  } else selG = null;
-}
-// Hộp chọn gene khi gộp sao (tối đa 2 gene giữ lại; gene bỏ về kho nếu còn chỗ)
-let mergeSel = null;
-function renderMerge() {
-  const m = $('modal');
-  if (!run.mergeQueue.length) { m.hidden = true; mergeSel = null; return; }
-  const item = run.mergeQueue[0];
-  if (!mergeSel || mergeSel.key !== run.mergeQueue.length + ':' + item.uid) mergeSel = { key: run.mergeQueue.length + ':' + item.uid, keep: item.pool.map((_, i) => i).slice(0, CONFIG.MAX_GENES_PER_UNIT) };
-  m.hidden = false; m.innerHTML = '';
-  const box = document.createElement('div'); box.className = 'box';
-  box.innerHTML = '<h3>✨ Gộp sao — chọn tối đa ' + CONFIG.MAX_GENES_PER_UNIT + ' gene giữ lại</h3><p class="muted">Gene không chọn sẽ về kho gene (nếu kho còn chỗ, hết chỗ thì mất).</p>';
-  const opts = document.createElement('div'); opts.className = 'opts';
-  item.pool.forEach((gid, i) => {
-    const c = geneCard(gid, mergeSel.keep.includes(i) ? ' picked' : '');
-    c.onclick = () => {
-      const k = mergeSel.keep, at = k.indexOf(i);
-      if (at >= 0) k.splice(at, 1); else if (k.length < CONFIG.MAX_GENES_PER_UNIT) k.push(i);
-      renderMerge();
-    };
-    opts.appendChild(c);
-  });
-  box.appendChild(opts);
-  const ok = document.createElement('button'); ok.className = 'primary'; ok.textContent = 'Xác nhận (' + mergeSel.keep.length + '/' + CONFIG.MAX_GENES_PER_UNIT + ')';
-  ok.onclick = () => { const r = resolveMerge(run, mergeSel.keep); mergeSel = null; toast(r.lost ? 'Mất ' + r.lost + ' gene vì kho đầy' : ''); renderPrep(); };
-  box.appendChild(ok); m.appendChild(box);
-}
-
 // ======================= KẾT THÚC RUN =======================
 function showEnd() {
   saveRun();   // run đã kết thúc => xóa save
   show('endScr');
   const won = run.over === 'win';
-  $('endTitle').textContent = won ? '🏆 THẮNG RUN!' : '💀 THUA RUN';
-  $('endTitle').style.color = won ? '#3ecf6e' : '#ef4444';
+  $('endTitle').textContent = won ? 'CHIẾN THẮNG' : 'THẤT BẠI';
+  $('endTitle').style.color = won ? 'var(--grn)' : '#f08c86';
   const units = listUnits(run).map(e => e.unit);
-  const genes = []; units.forEach(u => u.genes.forEach(g => genes.push(GENE_BY_ID[g].name + ' (trên ' + UNITS[u.type].name + ')'))); run.stash.forEach(g => genes.push(GENE_BY_ID[g].name + ' (trong kho)'));
+  const genes = []; units.forEach(u => u.genes.forEach(g => genes.push(GENE_BY_ID[g].name + ' (' + UNITS[u.type].name + ')'))); run.stash.forEach(g => genes.push(GENE_BY_ID[g].name + ' (kho)'));
   $('endBody').innerHTML =
-    '<p>Ải đạt được: <b>' + run.wave + '</b>/' + ECONOMY.TOTAL_WAVES + ' · trận thắng: <b>' + run.wins + '</b>/' + run.history.length + ' · mạng còn: <b>' + Math.max(0, run.lives) + '</b> · seed ' + run.seed + '</p>' +
-    '<div class="ttl"><b>Đội hình cuối</b></div><div class="endrow chips">' +
-    (units.length ? units.map(u => '<span class="chip">' + TYPE_ICON[u.type] + ' ' + UNITS[u.type].name + ' ' + '★'.repeat(u.star) + '</span>').join('') : '<span class="muted">không còn quân</span>') + '</div>' +
-    '<div class="ttl"><b>Gene</b></div><div class="muted">' + (genes.length ? esc(genes.join(', ')) : 'không có gene') + '</div>';
+    '<div class="muted">Seed ' + run.seed + '</div>' +
+    '<div class="tiles"><div class="tile"><b>' + run.wave + '/' + ECONOMY.TOTAL_WAVES + '</b><span>Ải đạt được</span></div><div class="tile"><b>' + run.wins + '/' + run.history.length + '</b><span>Trận thắng</span></div><div class="tile"><b>' + Math.max(0, run.lives) + '</b><span>Mạng còn</span></div></div>' +
+    '<div class="lbl">Đội hình cuối</div><div class="endteam">' +
+    (units.length ? units.map(u => '<span class="ech" style="' + tcStyle(u.type) + '"><span class="tk">' + ic(u.type) + '</span>' + UNITS[u.type].name + ' ' + u.star + '★</span>').join('') : '<span class="muted">không còn quân</span>') + '</div>' +
+    '<div class="lbl">Gene</div><div class="gl">' + (genes.length ? esc(genes.join(' · ')) : 'Không có gene') + '</div>';
 }
 
 // ======================= RENDER / PHÁT LẠI TRẬN (M2) =======================
 // Render chỉ PHÁT LẠI danh sách events do simulateBattle trả về; không chứa logic chiến đấu.
 // Mọi event mang giá trị tuyệt đối (hp, sh, x, y) nên áp lại nhiều lần vẫn đúng.
 const canvas = $('c'), ctx = canvas.getContext('2d');
-const COL_P = '#2f6df6', COL_E = '#d9443f';
+const COL_P = '#3d68ad', COL_E = '#b2493f';
+const ICON_P2D = {}; for (const k of ['tank', 'fighter', 'archer', 'mage', 'healer', 'assassin']) ICON_P2D[k] = new Path2D(ICON_D[k]);
 let R = null;            // trạng thái phát lại
 let speed = 1;           // x1 / x2 / x4
 let showLog = true;
 let lastT = performance.now();
 
 function runDevBattle() {
+  $('settings').hidden = true;
   const wave = +$('selWave').value, seed = (parseInt($('inSeed').value, 10) || 1) >>> 0, ruleId = $('selRule').value || null;
   const enemy = generateEnemy(wave, mulberry32(seed * 7919 + wave));
   const res = simulateBattle({ player: DEMO_TEAM, enemy, ruleId }, seed);
@@ -690,7 +953,7 @@ function startReplay(res) {
   $('hSeed').textContent = res.seed;
   const rl = res.ruleId ? RULES_BY_ID[res.ruleId] : null;
   $('rulebar').textContent = rl ? '⚠ Luật: ' + rl.name + ' — ' + rl.desc : '';
-  $('bPause').textContent = '⏸ Tạm dừng';
+  setPauseIcon();
   advance(0, true);
 }
 
@@ -718,7 +981,7 @@ function applyEvent(e, anim) {
       const d = U[e.dst]; if (!d) break;
       d.hp = e.hp; d.sh = e.sh; d.hit = 1;
       if (anim) {
-        const txt = e.amt > 0 ? '-' + e.amt : (e.abs ? '🛡' + e.abs : '0');
+        const txt = e.amt > 0 ? '-' + e.amt : (e.abs ? '◈' + e.abs : '0');
         addFx(e.dst, txt, e.crit ? '#ffd23f' : (e.kind === 'burn' ? '#ff9a3d' : '#ff6b6b'), e.crit ? 1.35 : 1);
       }
       break;
@@ -760,33 +1023,34 @@ function appendLogs(upTo) {
 function showResult() {
   const r = R.res, el = $('result'), win = r.winner === 'P';
   el.className = win ? 'win' : 'lose'; el.style.display = 'block';
-  $('rTitle').textContent = win ? '🏆 TA THẮNG' : r.winner === 'draw' ? '⏱ HÒA (tính là thua)' : '💀 ĐỊCH THẮNG';
+  $('rTitle').textContent = win ? 'THẮNG' : r.winner === 'draw' ? 'HÒA · TÍNH LÀ THUA' : 'THUA';
   $('rLine1').textContent = 'Thời gian ' + r.seconds.toFixed(1) + 's · quân ta chết ' + r.stats.deaths.P + ' · địch chết ' + r.stats.deaths.E;
   $('rLine2').textContent = 'Sát thương gene: ' + r.stats.damageByGene.P + ' · hồi máu đội: ' + r.stats.healTotal.P;
   if (mode === 'run') {
     if (!r.applied) { r.applied = true; r.summary = applyBattleResult(run, r); }
     const s = r.summary;
-    $('rLine3').textContent = '+' + (s.income + s.bonus) + '🪙 (thu nhập ' + s.income + (s.bonus ? ' + chuỗi thắng ' + s.bonus : '') + ')' + (s.loss ? ' · mất ' + s.loss + ' mạng' : '');
+    $('rLine3').textContent = '+' + (s.income + s.bonus) + ' vàng (thu nhập ' + s.income + (s.bonus ? ' + chuỗi thắng ' + s.bonus : '') + ')' + (s.loss ? ' · mất ' + s.loss + ' mạng' : '');
     const ob = OBJECTIVES_BY_ID[s.obj.id], rw = s.obj.reward;
-    $('rLine2').textContent += ' · 🎯 ' + ob.name + ': ' + (s.obj.done ? 'ĐẠT' + (rw ? ' (' + [rw.gold ? '+' + rw.gold + '🪙' : '', rw.extraGeneChoice ? '+1 lựa chọn gene' : '', rw.rareGene ? 'gene Hiếm: ' + GENE_BY_ID[rw.rareGene].name : ''].filter(Boolean).join(', ') + ')' : '') : 'không đạt');
-    if (s.market) $('rLine3').textContent += ' · 🕯 Chợ đen mở';
-    $('btnNext').textContent = run.over ? 'Xem tổng kết ▶' : 'Tiếp tục ▶';
-    run.lastMsg = (s.win ? '✔ Thắng ải ' + s.wave : '✘ Thua ải ' + s.wave) + ': +' + (s.income + s.bonus) + '🪙' + (s.loss ? ', mất ' + s.loss + ' mạng' : '');
+    $('rLine2').textContent += ' · Nhiệm vụ ' + ob.name + ': ' + (s.obj.done ? 'ĐẠT' + (rw ? ' (' + [rw.gold ? '+' + rw.gold + ' vàng' : '', rw.extraGeneChoice ? '+1 lựa chọn gene' : '', rw.rareGene ? 'gene Hiếm: ' + GENE_BY_ID[rw.rareGene].name : ''].filter(Boolean).join(', ') + ')' : '') : 'không đạt');
+    if (s.market) $('rLine3').textContent += ' · Chợ đen mở';
+    $('btnNext').textContent = run.over ? 'Xem tổng kết' : 'Tiếp tục';
+    run.lastMsg = (s.win ? 'Thắng ải ' : 'Thua ải ') + s.wave + ': +' + (s.income + s.bonus) + ' vàng' + (s.loss ? ', mất ' + s.loss + ' mạng' : '');
   } else {
     $('rLine3').textContent = '';
-    $('btnNext').textContent = 'Về menu ▶';
+    $('btnNext').textContent = 'Về menu';
   }
 }
 $('btnNext').onclick = () => {
   if (mode !== 'run') { show('titleScr'); return; }
-  sel = null; toast('');
+  sel = null; selG = null; xfer = null; tab = 'shop'; sheetMin = false; sheetShown = false; toast('');
   if (run.over) showEnd(); else showPrep();
 };
 
 // ---------- Điều khiển phát lại ----------
 function setSpeed(s) { speed = s; document.querySelectorAll('.spd').forEach(b => b.classList.toggle('on', +b.dataset.sp === s)); }
 document.querySelectorAll('.spd').forEach(b => b.onclick = () => setSpeed(+b.dataset.sp));
-function togglePause() { if (!R) return; R.paused = !R.paused; $('bPause').textContent = R.paused ? '▶ Tiếp tục' : '⏸ Tạm dừng'; }
+function setPauseIcon() { $('bPause').innerHTML = ic(R && R.paused ? 'play' : 'pause'); }
+function togglePause() { if (!R) return; R.paused = !R.paused; setPauseIcon(); }
 function skip() {
   if (!R || R.done) return;
   R.tick = R.res.ticks + 1; R.fx = []; R.beams = [];
@@ -816,11 +1080,11 @@ function draw(dt) {
   ctx.clearRect(0, 0, W, H);
   const rule = R && R.res.ruleId ? RULES_BY_ID[R.res.ruleId].mods : null;
   for (let y = 0; y < 5; y++) for (let x = 0; x < 8; x++) {
-    ctx.fillStyle = x < 4 ? ((x + y) % 2 ? '#15213a' : '#182646') : ((x + y) % 2 ? '#2a1a20' : '#321e26');
+    ctx.fillStyle = x < 4 ? ((x + y) % 2 ? '#121722' : '#151b27') : ((x + y) % 2 ? '#1c1519' : '#20181c');
     ctx.fillRect(x * cs, y * cs, cs, cs);
     if (rule && rule.rows && !rule.rows.includes(y)) { ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(x * cs, y * cs, cs, cs); }
   }
-  ctx.strokeStyle = '#ffffff22'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(4 * cs, 0); ctx.lineTo(4 * cs, H); ctx.stroke();
+  ctx.strokeStyle = '#ffffff1a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(4 * cs, 0); ctx.lineTo(4 * cs, H); ctx.stroke();
   if (!R) return;
 
   const tick = R.tick, units = Object.values(R.units).sort((a, b) => a.py - b.py || a.id - b.id);
@@ -838,15 +1102,15 @@ function draw(dt) {
     ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
     ctx.lineWidth = 2; ctx.strokeStyle = u.stunUntil > tick ? '#ffe14d' : '#ffffff55'; ctx.stroke();
     if (u.hit > 0) { ctx.fillStyle = 'rgba(255,255,255,' + (u.hit * 0.6) + ')'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill(); }
-    ctx.font = Math.round(cs * 0.34) + 'px system-ui,"Segoe UI Emoji","Noto Color Emoji"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#fff'; ctx.fillText(TYPE_ICON[u.type] || '?', cx, cy + 1);
+    { const s = r * 1.15; ctx.save(); ctx.translate(cx - s / 2, cy - s / 2); ctx.scale(s / 24, s / 24); ctx.lineWidth = 1.9; ctx.lineCap = ctx.lineJoin = 'round'; ctx.strokeStyle = '#fff'; ctx.stroke(ICON_P2D[u.type]); ctx.restore(); }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     if (u.star > 1) { ctx.font = 'bold ' + Math.round(cs * 0.16) + 'px system-ui'; ctx.fillStyle = '#ffd23f'; ctx.fillText('★'.repeat(u.star), cx, cy + r + cs * 0.1); }
     const bw = cs * 0.74, bh = Math.max(4, cs * 0.075), bx = cx - bw / 2, by = cy - r - bh - 3;
     ctx.fillStyle = '#000a'; ctx.fillRect(bx, by, bw, bh);
     ctx.fillStyle = hpColor(u.hp / u.maxHP); ctx.fillRect(bx, by, bw * Math.max(0, Math.min(1, u.hp / u.maxHP)), bh);
     if (u.sh > 0) { ctx.fillStyle = '#6fd3ff'; ctx.fillRect(bx, by - 3, bw * Math.min(1, u.sh / u.maxHP), 3); }
-    let ic = ''; if (u.burnUntil > tick) ic += '🔥'; if (u.slowUntil > tick) ic += '🐌'; if (u.stunUntil > tick) ic += '💫';
-    if (ic) { ctx.font = Math.round(cs * 0.17) + 'px system-ui,"Noto Color Emoji"'; ctx.fillStyle = '#fff'; ctx.fillText(ic, cx, by - 9); }
+    { const sc = []; if (u.burnUntil > tick) sc.push('#ff9a3d'); if (u.slowUntil > tick) sc.push('#6fb4ff'); if (u.stunUntil > tick) sc.push('#ffe14d');
+      sc.forEach((c, k) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(cx + (k - (sc.length - 1) / 2) * cs * 0.13, by - 8, cs * 0.045, 0, 7); ctx.fill(); }); }
     ctx.globalAlpha = 1;
   }
   for (let i = R.beams.length - 1; i >= 0; i--) {
@@ -873,6 +1137,7 @@ function updateHud() {
   let p = 0, pt = 0, e = 0, et = 0;
   for (const u of Object.values(R.units)) { if (u.side === 'P') { pt++; if (u.alive) p++; } else { et++; if (u.alive) e++; } }
   $('hP').textContent = p + '/' + pt; $('hE').textContent = e + '/' + et;
+  $('tbar').firstChild.style.width = Math.min(100, R.tick / CONFIG.TICKS_PER_SEC / 60 * 100) + '%';
 }
 
 function frame(now) {
@@ -889,7 +1154,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-refreshContinue();
+refreshContinue(); fillIcons(); setPauseIcon(); refreshSettings();
 </script>
 </body>
 </html>
