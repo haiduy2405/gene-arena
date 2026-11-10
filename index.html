@@ -95,6 +95,18 @@
   #log .g{color:#f1c453}#log .d{color:#ff7a7a}#log .h{color:#6fe39a}#log .e{color:#fff;font-weight:700}#log .x{color:#8b98ad}
   .hint{font-size:11px;color:#6d7a90;margin-top:6px}
 
+  /* ---- M6 ---- */
+  table.t{border-collapse:collapse;font-size:12px;width:100%;margin:6px 0}
+  table.t th,table.t td{border-bottom:1px solid #2a3350;padding:3px 6px;text-align:right}
+  table.t th:first-child,table.t td:first-child{text-align:left}
+  table.t th{color:#9aa7bd;font-weight:600;cursor:default}
+  .bar{height:6px;background:#26304a;border-radius:3px;overflow:hidden;min-width:50px}.bar i{display:block;height:100%;background:#3ecf6e}
+  #prog{height:10px;background:#26304a;border-radius:5px;overflow:hidden;margin:8px 0}#prog i{display:block;height:100%;width:0;background:#2f6df6}
+  .scroll{overflow-x:auto}
+  #dbg{position:fixed;left:0;right:0;bottom:0;background:#0b0e14ee;border-top:2px solid #e8c26a;padding:8px 10px;font-size:12px;z-index:60;max-height:46vh;overflow:auto}
+  #dbg .r{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:4px 0}
+  #dbg input[type=number]{width:120px}
+  #dbg pre{white-space:pre-wrap;word-break:break-all;margin:4px 0;color:#9aa7bd}
   /* ---- M5 ---- */
   .banner{border:1px solid #3a4560;border-radius:8px;padding:6px 8px;font-size:12px;margin-bottom:6px;line-height:1.4}
   .banner.rule{border-color:#e8c26a;background:#1a1810;color:#f1d68a}
@@ -137,15 +149,20 @@
 </head>
 <body>
 <div id="app">
-  <h1>GENE ARENA <small>v0.1 · M5</small></h1>
+  <h1>GENE ARENA <small>v0.1 · M6</small> <button id="btnDbg" class="muted" style="padding:0 6px;font-size:11px" title="Debug (phím D)">🐞</button></h1>
 
   <!-- ============ MÀN HÌNH CHÍNH ============ -->
   <section id="titleScr" class="panel">
     <div class="setup">
       <label>Seed run (bỏ trống = ngẫu nhiên)<input id="inRunSeed" type="number" placeholder="ngẫu nhiên"></label>
       <button id="btnNewRun" class="primary">▶ Run mới</button>
+      <button id="btnContinue" class="primary" hidden>⏵ Tiếp tục</button>
     </div>
-    <p class="muted">15 ải · 5 mạng · 10 vàng đầu run. Mua quân, xếp đội, gộp 3 quân cùng loại + cùng sao thành sao cao hơn. Sau mỗi trận chọn gene thưởng, gắn tối đa 2 gene/quân. Luật thế giới, nhiệm vụ phụ, chợ đen có ở mốc sau.</p>
+    <div class="setup">
+      <label>Số run bot<input id="inBotRuns" type="number" value="100" min="1" max="1000"></label>
+      <button id="btnPlaytest">🧪 Auto-playtest</button>
+    </div>
+    <p class="muted">15 ải · 5 mạng · 10 vàng đầu run. Mua quân, xếp đội, gộp 3 quân cùng loại + cùng sao thành sao cao hơn. Sau mỗi trận chọn gene thưởng, gắn tối đa 2 gene/quân. Có luật thế giới đổi theo ải, nhiệm vụ phụ, chợ đen (đổi mạng lấy gene Nguyền rủa) và mảnh ký ức. Tự động lưu sau mỗi thao tác.</p>
     <details>
       <summary>Trận thử (dev) — đội cố định, chọn ải / luật / seed</summary>
       <div class="setup">
@@ -187,6 +204,13 @@
     </div>
   </section>
 
+  <!-- ============ AUTO-PLAYTEST ============ -->
+  <section id="testScr" class="panel" hidden>
+    <div class="ttl"><b>🧪 Auto-playtest</b> <span class="muted" id="testNote"></span> <button id="btnTestBack">← Về menu</button></div>
+    <div id="prog"><i></i></div>
+    <div id="testOut"></div>
+  </section>
+
   <!-- ============ TRẬN ĐẤU ============ -->
   <section id="battleScr" hidden>
     <div class="row">
@@ -225,6 +249,21 @@
   </section>
 </div>
 
+<div id="modal" hidden></div>
+<div id="dbg" hidden>
+  <div class="r"><b>🐞 Debug</b> <span class="muted">(phím D để ẩn)</span> <button id="dbgClose">✕</button></div>
+  <div id="dbgInfo"></div>
+  <div class="r">
+    <label>Seed trận kế <input id="dbgSeed" type="number" placeholder="mặc định"></label>
+    <button id="dbgApply">Áp</button><button id="dbgClear">Bỏ override</button>
+  </div>
+  <div class="r">
+    <button id="dbgRerun" class="primary">↻ Chạy lại cùng seed</button>
+    <label><input id="dbgVerbose" type="checkbox"> Log chi tiết</label>
+    <button id="dbgCopy">Sao chép state JSON</button>
+  </div>
+  <pre id="dbgOut"></pre>
+</div>
 <script src="data.js"></script>
 <script src="game.js"></script>
 <script>
@@ -243,8 +282,10 @@ const RAR_VI = { common: 'Thường', rare: 'Hiếm', cursed: 'Nguyền rủa' }
 
 function show(id) {
   cur = id;
-  for (const s of ['titleScr', 'prepScr', 'battleScr', 'endScr']) $(s).hidden = (s !== id);
+  for (const s of ['titleScr', 'prepScr', 'battleScr', 'endScr', 'testScr']) $(s).hidden = (s !== id);
   if (id === 'battleScr') { resize(); }
+  if (id === 'titleScr') refreshContinue();
+  if (!$('dbg').hidden) renderDbg();
 }
 const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 const samePos = (a, b) => a && b && a.zone === b.zone && a.x === b.x && a.y === b.y && a.i === b.i;
@@ -265,6 +306,15 @@ function toast(msg, good) { const t = $('toast'); t.textContent = msg || ''; t.c
   }
   $('selRule').innerHTML = '<option value="">Không có luật</option>' + RULES.map(r => '<option value="' + r.id + '">' + r.name + '</option>').join('');
 })();
+// ---------- Lưu / tiếp tục (localStorage, bọc try/catch vì có thể bị chặn) ----------
+const SAVE_KEY = 'genearena_save_v1';
+function saveRun() { try { if (run && !run.over) localStorage.setItem(SAVE_KEY, serializeRun(run)); else localStorage.removeItem(SAVE_KEY); } catch (e) {} }
+function loadSaved() { try { const t = localStorage.getItem(SAVE_KEY); return t ? parseRun(t) : null; } catch (e) { return null; } }
+function refreshContinue() {
+  const sv = loadSaved(), b = $('btnContinue');
+  b.hidden = !sv; if (sv) b.textContent = '⏵ Tiếp tục (ải ' + sv.wave + ' · ❤' + sv.lives + ' · 🪙' + sv.gold + ')';
+}
+$('btnContinue').onclick = () => { const sv = loadSaved(); if (!sv) { refreshContinue(); return; } run = sv; mode = 'run'; sel = selG = xfer = null; dbgSeedOverride = null; toast(''); showPrep(); };
 $('btnNewRun').onclick = () => {
   const v = $('inRunSeed').value;
   run = newRun(v === '' ? undefined : parseInt(v, 10));
@@ -276,6 +326,7 @@ $('btnDice').onclick = () => { $('inSeed').value = Math.floor(Math.random() * 1e
 
 // ======================= CHUẨN BỊ =======================
 function showPrep() { show('prepScr'); renderPrep(); }
+let dbgSeedOverride = null, dbgVerbose = false, lastBattle = null;
 
 function unitEl(u, pos) {
   const d = document.createElement('div');
@@ -327,6 +378,7 @@ function doMove(src, dst) {
 
 function renderPrep() {
   if (!run) return;
+  saveRun();
   const w = run.wave, lim = fieldLimit(w);
   $('prepHud').innerHTML =
     '<span>Ải <b>' + w + '</b>/' + ECONOMY.TOTAL_WAVES + (isBossWave(w) ? '<span class="tag">BOSS</span>' : '') + '</span>' +
@@ -417,8 +469,10 @@ function renderEnemy() {
 $('btnStart').onclick = () => {
   if (!run || fieldCount(run) === 0) return;
   mode = 'run'; sel = null;
-  const res = simulateBattle(buildBattleState(run), battleSeed(run));   // thuần logic
+  const st = buildBattleState(run), seed = dbgSeedOverride != null ? dbgSeedOverride : battleSeed(run);
+  const res = simulateBattle(st, seed);   // thuần logic
   res.wave = run.wave;
+  lastBattle = { state: JSON.parse(JSON.stringify(st)), seed, hash: hashEvents(res), res, wave: run.wave };
   show('battleScr');
   startReplay(res);
 };
@@ -450,6 +504,64 @@ function renderMarket() {
   const no = document.createElement('button'); no.textContent = 'Từ chối'; no.onclick = () => { refuseMarket(run); renderPrep(); };
   row.appendChild(buy); row.appendChild(no); box.appendChild(row);
 }
+
+// ======================= AUTO-PLAYTEST UI =======================
+const pct = (a, b) => b ? Math.round(a / b * 100) : null;
+const pctCell = v => v === null ? '<td>-</td>' : '<td><div class="bar"><i style="width:' + v + '%"></i></div>' + v + '%</td>';
+function renderPlaytest(acc, ms) {
+  const waves = Object.keys(acc.waves).map(Number);
+  let avgEnd = 0; for (const k in acc.endWave) avgEnd += k * acc.endWave[k]; avgEnd /= acc.runs;
+  let h = '<p>' + acc.runs + ' run bot ngẫu nhiên (' + (ms / 1000).toFixed(1) + 's) · thắng run <b>' + acc.wins + '</b> (' + pct(acc.wins, acc.runs) + '%) · ải kết thúc TB <b>' + avgEnd.toFixed(1) + '</b> · nhiệm vụ đạt <b>' + pct(acc.objDone, acc.objN) + '%</b> · chợ đen mua ' + acc.marketBuys + '/' + acc.marketSeen + '</p>';
+  h += '<div class="ttl"><b>Theo ải</b> <span class="muted">(bot không bán quân/không reroll — chỉ là mốc so sánh)</span></div><div class="scroll"><table class="t"><tr><th>Ải</th><th>Run đến</th><th>Trận</th><th>Thắng</th><th>Hòa</th><th>TB giây</th></tr>' +
+    waves.map(w => { const W = acc.waves[w]; return '<tr><td>' + w + (isBossWave(w) ? ' 👑' : '') + '</td><td>' + W.runsReached + '</td><td>' + W.fights + '</td>' + pctCell(pct(W.wins, W.fights)) + '<td>' + (pct(W.draws, W.fights) ?? '-') + '%</td><td>' + (W.fights ? (W.sec / W.fights).toFixed(1) : '-') + '</td></tr>'; }).join('') + '</table></div>';
+  h += '<div class="ttl"><b>Theo loại quân</b> <span class="muted">(trận có mặt trên sân)</span></div><div class="scroll"><table class="t"><tr><th>Quân</th><th>Lượt ra sân</th><th>Thắng</th><th>Sao TB</th></tr>' +
+    Object.keys(acc.units).map(t => { const U = acc.units[t]; return '<tr><td>' + TYPE_ICON[t] + ' ' + UNITS[t].name + '</td><td>' + U.fights + '</td>' + pctCell(pct(U.wins, U.fights)) + '<td>' + (U.fights ? (U.star / U.fights).toFixed(2) : '-') + '</td></tr>'; }).join('') + '</table></div>';
+  const gl = GENES.map(g => Object.assign({ g }, acc.genes[g.id])).sort((a, b) => (pct(b.wins, b.fights) ?? -1) - (pct(a.wins, a.fights) ?? -1));
+  h += '<div class="ttl"><b>Theo gene</b> <span class="muted">(sắp theo tỉ lệ thắng; mẫu nhỏ thì nhiễu)</span></div><div class="scroll"><table class="t"><tr><th>Gene</th><th>Hiếm</th><th>Nhặt</th><th>Trận mang</th><th>Thắng</th><th>Kích/trận</th><th>Dmg/trận</th></tr>' +
+    gl.map(x => '<tr><td class="r-' + x.g.rarity + '"><span class="gn" style="font-weight:700">' + esc(x.g.name) + '</span></td><td>' + RAR_VI[x.g.rarity] + '</td><td>' + x.picked + '</td><td>' + x.fights + '</td>' + pctCell(pct(x.wins, x.fights)) + '<td>' + (x.fights ? (x.trig / x.fights).toFixed(1) : '-') + '</td><td>' + (x.fights ? Math.round(x.dmg / x.fights) : '-') + '</td></tr>').join('') + '</table></div>';
+  h += '<div class="ttl"><b>Theo luật thế giới</b></div><div class="scroll"><table class="t"><tr><th>Luật</th><th>Trận</th><th>Thắng</th></tr>' +
+    RULES.map(r => { const x = acc.rules[r.id]; return '<tr><td>' + esc(r.name) + '</td><td>' + x.fights + '</td>' + pctCell(pct(x.wins, x.fights)) + '</tr>'; }).join('') + '</table></div>';
+  h += '<div class="btns"><button id="btnTestCopy">Sao chép JSON</button></div>';
+  $('testOut').innerHTML = h;
+  $('btnTestCopy').onclick = () => { const t = JSON.stringify(acc); try { navigator.clipboard.writeText(t).then(() => toast('Đã sao chép', true), () => { $('testOut').insertAdjacentHTML('beforeend', '<pre>' + esc(t) + '</pre>'); }); } catch (e) { $('testOut').insertAdjacentHTML('beforeend', '<pre>' + esc(t) + '</pre>'); } };
+}
+let testing = false;
+$('btnPlaytest').onclick = () => {
+  if (testing) return;
+  const n = Math.max(1, Math.min(1000, parseInt($('inBotRuns').value, 10) || 100)), base = Math.floor(Math.random() * 1e6), t0 = performance.now();
+  testing = true; show('testScr'); $('testOut').innerHTML = ''; $('testNote').textContent = 'seed gốc ' + base; $('prog').firstChild.style.width = '0';
+  autoPlaytest(n, base, (d, tot) => { $('prog').firstChild.style.width = (d / tot * 100) + '%'; $('testNote').textContent = 'seed gốc ' + base + ' · ' + d + '/' + tot; },
+    acc => { testing = false; renderPlaytest(acc, performance.now() - t0); });
+};
+$('btnTestBack').onclick = () => { if (!testing) show('titleScr'); };
+
+// ======================= DEBUG (phím D) =======================
+function renderDbg() {
+  const L = lastBattle, rl = run && mode === 'run' ? ruleForWave(run, run.wave) : null;
+  $('dbgInfo').innerHTML = (run ? 'Run seed <b>' + run.seed + '</b> · rngN ' + run.rngN + ' · ải ' + run.wave + ' · seed trận mặc định <b>' + battleSeed(run) + '</b> · luật ' + (rl || '—') : 'Chưa có run') +
+    (dbgSeedOverride != null ? ' · <b style="color:#ffd23f">override seed ' + dbgSeedOverride + '</b>' : '') +
+    (L ? '<br>Trận gần nhất: ải ' + L.wave + ' · seed ' + L.seed + ' · hash ' + L.hash + ' · ' + L.res.winner : '<br>Chưa có trận nào');
+  $('dbgRerun').disabled = !L;
+}
+function toggleDbg() { $('dbg').hidden = !$('dbg').hidden; if (!$('dbg').hidden) renderDbg(); }
+$('btnDbg').onclick = toggleDbg; $('dbgClose').onclick = toggleDbg;
+document.addEventListener('keydown', e => { if ((e.key === 'd' || e.key === 'D') && !e.ctrlKey && !e.metaKey && !e.altKey && !/INPUT|TEXTAREA|SELECT/.test((e.target.tagName || ''))) toggleDbg(); });
+$('dbgApply').onclick = () => { const v = $('dbgSeed').value; dbgSeedOverride = v === '' ? null : (parseInt(v, 10) >>> 0); renderDbg(); };
+$('dbgClear').onclick = () => { dbgSeedOverride = null; $('dbgSeed').value = ''; renderDbg(); };
+$('dbgVerbose').onchange = e => { dbgVerbose = e.target.checked; };
+// Chạy lại cùng seed: mô phỏng lại đúng state + seed, so hash với lần trước (phải khớp), rồi phát lại. Không áp kết quả vào run lần nữa.
+$('dbgRerun').onclick = () => {
+  const L = lastBattle; if (!L) return;
+  const res = simulateBattle(JSON.parse(JSON.stringify(L.state)), L.seed), h = hashEvents(res), same = h === L.hash;
+  res.wave = L.wave; res.applied = L.res.applied; res.summary = L.res.summary;
+  lastBattle = Object.assign({}, L, { res });
+  $('dbgOut').textContent = same ? '✔ Khớp: cùng seed ' + L.seed + ' → hash ' + h + ' (deterministic)' : '✘ LỆCH! hash cũ ' + L.hash + ' ≠ mới ' + h;
+  show('battleScr'); startReplay(res); renderDbg();
+};
+$('dbgCopy').onclick = () => {
+  const t = JSON.stringify({ run, battle: lastBattle ? { seed: lastBattle.seed, wave: lastBattle.wave, state: lastBattle.state, hash: lastBattle.hash } : null });
+  try { navigator.clipboard.writeText(t).then(() => { $('dbgOut').textContent = 'Đã sao chép ' + t.length + ' ký tự'; }, () => { $('dbgOut').textContent = t; }); } catch (e) { $('dbgOut').textContent = t; }
+};
 
 // ======================= GENE UI (M4) =======================
 function geneCard(gid, extra) {
@@ -531,6 +643,7 @@ function renderMerge() {
 
 // ======================= KẾT THÚC RUN =======================
 function showEnd() {
+  saveRun();   // run đã kết thúc => xóa save
   show('endScr');
   const won = run.over === 'win';
   $('endTitle').textContent = won ? '🏆 THẮNG RUN!' : '💀 THUA RUN';
@@ -558,6 +671,7 @@ function runDevBattle() {
   const wave = +$('selWave').value, seed = (parseInt($('inSeed').value, 10) || 1) >>> 0, ruleId = $('selRule').value || null;
   const enemy = generateEnemy(wave, mulberry32(seed * 7919 + wave));
   const res = simulateBattle({ player: DEMO_TEAM, enemy, ruleId }, seed);
+  lastBattle = { state: JSON.parse(JSON.stringify({ player: DEMO_TEAM, enemy, ruleId })), seed, hash: hashEvents(res), res, wave };
   res.wave = wave;
   mode = 'dev';
   show('battleScr');
@@ -566,7 +680,7 @@ function runDevBattle() {
 $('btnRun').onclick = runDevBattle;
 
 function startReplay(res) {
-  R = { res, idx: 0, tick: 0, paused: false, done: false, units: {}, fx: [], beams: [], entries: formatLogEntries(res, false), logIdx: 0 };
+  R = { res, idx: 0, tick: 0, paused: false, done: false, units: {}, fx: [], beams: [], entries: formatLogEntries(res, dbgVerbose), logIdx: 0 };
   for (const u of res.initial) {
     R.units[u.id] = { id: u.id, side: u.side, type: u.type, star: u.star, name: u.name, x: u.x, y: u.y, px: u.x, py: u.y,
       hp: u.hp, maxHP: u.maxHP, sh: u.shield, alive: true, fade: 1, hit: 0, burnUntil: 0, slowUntil: 0, stunUntil: 0 };
@@ -775,7 +889,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+refreshContinue();
 </script>
-<div id="modal" hidden></div>
 </body>
 </html>

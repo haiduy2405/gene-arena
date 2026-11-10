@@ -824,6 +824,86 @@ function resolveMerge(run, keepIdx) {
 // Chặn bắt đầu trận khi còn việc dở (chọn gene thưởng / chọn gene khi gộp)
 const runBusy = run => !!run.geneChoice || run.mergeQueue.length > 0 || !!run.market;
 
+// ======================= AUTO-PLAYTEST + LƯU RUN (M6) =======================
+// Bot ngẫu nhiên chơi trọn run bằng đúng các hàm của run (buyUnit/moveUnit/pickGene/...) rồi gom thống kê để soi cân bằng.
+// Bot KHÔNG bán quân, không reroll, không chọn synergy — chỉ là "người chơi ngẫu nhiên", dùng làm mốc so sánh.
+function newPlaytestAcc() {
+  const a = { runs: 0, wins: 0, endWave: {}, lives: 0, waves: {}, units: {}, genes: {}, rules: {}, objDone: 0, objN: 0, marketBuys: 0, marketSeen: 0 };
+  for (let w = 1; w <= ECONOMY.TOTAL_WAVES; w++) a.waves[w] = { fights: 0, wins: 0, sec: 0, draws: 0, runsReached: 0 };
+  for (const t of Object.keys(UNITS)) a.units[t] = { fights: 0, wins: 0, star: 0 };
+  for (const g of GENES) a.genes[g.id] = { picked: 0, fights: 0, wins: 0, dmg: 0, trig: 0 };
+  for (const r of RULES) a.rules[r.id] = { fights: 0, wins: 0 };
+  return a;
+}
+function botPlayRun(seed, acc) {
+  const run = newRun(seed), rng = mulberry32((seed * 2654435761) >>> 0), ri = n => Math.floor(rng() * n);
+  const bot = { picks: 0 };
+  let guard = 0;
+  while (!run.over && guard++ < 60) {
+    // mua: hết vàng thì thôi, chọn slot ngẫu nhiên
+    for (let k = 0; k < 8 && run.gold >= ECONOMY.BUY_COST; k++) {
+      const slots = run.shop.map((t, i) => t ? i : -1).filter(i => i >= 0); if (!slots.length) break;
+      if (!buyUnit(run, slots[ri(slots.length)]).ok) break;
+    }
+    while (run.mergeQueue.length) { const n = run.mergeQueue[0].pool.length, idx = []; while (idx.length < Math.min(CONFIG.MAX_GENES_PER_UNIT, n)) { const i = ri(n); if (!idx.includes(i)) idx.push(i); } resolveMerge(run, idx); }
+    if (run.geneChoice) { const o = run.geneChoice.options; const gid = o[ri(o.length)]; if (pickGene(run, o.indexOf(gid)).ok) { acc.genes[gid].picked++; } else skipGene(run); }
+    if (run.market) { acc.marketSeen++; if (rng() < 0.5 && buyMarket(run).ok) { acc.marketBuys++; acc.genes[run.stash[run.stash.length - 1]].picked++; } else refuseMarket(run); }
+    // xếp quân: đưa quân ghế dự bị lên sân ở ô trống ngẫu nhiên
+    for (const e of listUnits(run).filter(e => e.zone === 'bench')) {
+      if (fieldCount(run) >= fieldLimit(run.wave)) break;
+      const cells = []; for (let y = 0; y < CONFIG.ROWS; y++) for (let x = CONFIG.PLAYER_COLS[0]; x <= CONFIG.PLAYER_COLS[1]; x++) if (!run.field[fKey(x, y)]) cells.push({ x, y });
+      if (cells.length) moveUnit(run, e, Object.assign({ zone: 'field' }, cells[ri(cells.length)]));
+    }
+    for (const e of listUnits(run)) while (run.stash.length && e.unit.genes.length < CONFIG.MAX_GENES_PER_UNIT) { if (!attachGene(run, ri(run.stash.length), e).ok) break; }
+    if (fieldCount(run) === 0) { run.over = 'lose'; break; }
+    const st = buildBattleState(run), res = simulateBattle(st, battleSeed(run)), wave = run.wave, win = res.winner === 'P';
+    const W = acc.waves[wave]; W.fights++; if (win) W.wins++; if (res.winner === 'draw') W.draws++; W.sec += res.seconds;
+    if (st.ruleId) { acc.rules[st.ruleId].fights++; if (win) acc.rules[st.ruleId].wins++; }
+    for (const e of listUnits(run).filter(e => e.zone === 'field')) {
+      const U = acc.units[e.unit.type]; U.fights++; U.star += e.unit.star; if (win) U.wins++;
+      for (const gid of e.unit.genes) { const G = acc.genes[gid]; G.fights++; if (win) G.wins++; }
+    }
+    for (const gid in res.stats.geneDamage || {}) if (acc.genes[gid]) acc.genes[gid].dmg += res.stats.geneDamage[gid] || 0;
+    for (const gid in res.stats.geneTriggers || {}) if (acc.genes[gid]) acc.genes[gid].trig += res.stats.geneTriggers[gid] || 0;
+    const sum = applyBattleResult(run, res); acc.objN++; if (sum.obj.done) acc.objDone++;
+  }
+  acc.runs++; if (run.over === 'win') acc.wins++; acc.lives += Math.max(0, run.lives);
+  acc.endWave[run.wave] = (acc.endWave[run.wave] || 0) + 1;
+  for (let w = 1; w <= run.wave; w++) acc.waves[w].runsReached++;
+  return run;
+}
+// Chạy n run theo từng cụm nhỏ để trình duyệt không bị đơ. onProgress(done,n), onDone(acc).
+function autoPlaytest(n, baseSeed, onProgress, onDone) {
+  const acc = newPlaytestAcc(); let i = 0; const CH = 4;
+  (function step() {
+    const end = Math.min(n, i + CH);
+    for (; i < end; i++) botPlayRun((baseSeed + i * 7919) >>> 0, acc);
+    if (onProgress) onProgress(i, n);
+    if (i < n) setTimeout(step, 0); else onDone(acc);
+  })();
+}
+// Lưu / nạp run (localStorage ở index.html). run là JSON thuần; RNG của run suy ra từ (seed, rngN) nên nạp lại là tiếp tục y hệt.
+const SAVE_VERSION = 1;
+function serializeRun(run) { return JSON.stringify({ v: SAVE_VERSION, run }); }
+function parseRun(str) {
+  try {
+    const d = JSON.parse(str), r = d && d.run;
+    if (!d || d.v !== SAVE_VERSION || !r || r.over) return null;
+    const okNum = k => typeof r[k] === 'number' && isFinite(r[k]);
+    if (!['seed', 'rngN', 'wave', 'gold', 'lives', 'streak', 'wins', 'nextUid'].every(okNum)) return null;
+    if (r.wave < 1 || r.wave > ECONOMY.TOTAL_WAVES) return null;
+    if (!Array.isArray(r.bench) || r.bench.length !== ECONOMY.BENCH_SIZE || !Array.isArray(r.stash) || !Array.isArray(r.shop) || !Array.isArray(r.history) || !Array.isArray(r.mergeQueue)) return null;
+    if (!r.field || typeof r.field !== 'object') return null;
+    const unitOk = u => u === null || (u && UNITS[u.type] && u.star >= 1 && u.star <= 3 && Array.isArray(u.genes) && u.genes.every(g => GENE_BY_ID[g]) && Array.isArray(u.shards));
+    if (!r.bench.every(unitOk) || !Object.values(r.field).every(u => u && unitOk(u))) return null;
+    if (!r.stash.every(g => GENE_BY_ID[g])) return null;
+    if (r.geneChoice === undefined) r.geneChoice = null; if (r.market === undefined) r.market = null;
+    return r;
+  } catch (e) { return null; }
+}
+// Hash nhỏ của chuỗi sự kiện, để debug so sánh 2 lần chạy cùng seed.
+function hashEvents(res) { const s = JSON.stringify(res.events); let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(16); }
+
 // ======================= DEMO (console) =======================
 // Mở index.html -> F12 -> demoBattle(1, 3)  hoặc demoBattle(seed, wave, ruleId, verbose)
 const DEMO_TEAM = [
