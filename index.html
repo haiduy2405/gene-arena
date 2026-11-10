@@ -95,6 +95,15 @@
   #log .g{color:#f1c453}#log .d{color:#ff7a7a}#log .h{color:#6fe39a}#log .e{color:#fff;font-weight:700}#log .x{color:#8b98ad}
   .hint{font-size:11px;color:#6d7a90;margin-top:6px}
 
+  /* ---- M5 ---- */
+  .banner{border:1px solid #3a4560;border-radius:8px;padding:6px 8px;font-size:12px;margin-bottom:6px;line-height:1.4}
+  .banner.rule{border-color:#e8c26a;background:#1a1810;color:#f1d68a}
+  .banner.next{border-color:#3a4560;color:#9aa7bd}
+  .banner.obj{border-color:#4aa3ff;background:#101a2a;color:#bcd8ff}
+  .banner.xfer{border-color:#ffd23f;background:#2a2410;color:#ffe9a0}
+  #marketBox{border-color:#a044d6;background:#1a1020}
+  .gcard.cursedbuy{border-color:#a044d6}
+  .slot.xt{outline:2px dashed #ffd23f}
   /* ---- Gene ---- */
   .gcard{background:#1d2433;border:2px solid #3a4560;border-radius:8px;padding:8px;font-size:12px;cursor:pointer;text-align:left;position:relative}
   .gcard:hover{background:#26304a}
@@ -128,7 +137,7 @@
 </head>
 <body>
 <div id="app">
-  <h1>GENE ARENA <small>v0.1 · M4</small></h1>
+  <h1>GENE ARENA <small>v0.1 · M5</small></h1>
 
   <!-- ============ MÀN HÌNH CHÍNH ============ -->
   <section id="titleScr" class="panel">
@@ -163,12 +172,14 @@
         <div id="toast"></div>
       </div>
       <div class="panel" style="flex:1 1 380px;min-width:0">
+        <div id="marketBox" class="panel" hidden></div>
         <div id="geneReward" class="panel" hidden></div>
         <div class="ttl"><b>Shop</b> <span class="muted">mua 3🪙 · bán 2/5/9🪙</span> <button id="btnReroll">🔄 Làm mới (1🪙)</button></div>
         <div id="shop"></div>
         <div class="ttl" style="margin-top:12px"><b>Kho gene</b> <span id="stashCnt" class="muted"></span> <span class="muted">chạm gene → chạm quân để gắn</span></div>
         <div id="stash"></div>
         <div id="ginfo" class="muted" style="min-height:20px;margin-top:6px"></div>
+        <div id="ruleBox"></div><div id="objBox"></div>
         <div class="ttl" style="margin-top:12px"><b id="enemyTtl">Địch</b> <span class="muted" id="enemyNote"></span></div>
         <div class="chips" id="enemyPrev"></div>
         <button id="btnStart" class="primary big">⚔ Bắt đầu trận</button>
@@ -226,6 +237,7 @@ let mode = 'run';        // 'run' | 'dev' (trận thử)
 let cur = 'titleScr';
 let sel = null;          // quân đang chọn trong màn chuẩn bị: pos
 let dragSrc = null;
+let xfer = null;         // đang chọn quân nhận "Truyền ký ức" (vị trí quân sẽ bị bán)
 let selG = null;         // gene đang chọn trong kho (chỉ số) hoặc null
 const RAR_VI = { common: 'Thường', rare: 'Hiếm', cursed: 'Nguyền rủa' };
 
@@ -256,7 +268,7 @@ function toast(msg, good) { const t = $('toast'); t.textContent = msg || ''; t.c
 $('btnNewRun').onclick = () => {
   const v = $('inRunSeed').value;
   run = newRun(v === '' ? undefined : parseInt(v, 10));
-  sel = null; selG = null; toast('');
+  sel = null; selG = null; xfer = null; toast('');
   showPrep();
 };
 $('btnAgain').onclick = () => { show('titleScr'); };
@@ -278,6 +290,7 @@ function slotEl(pos) {
   const s = document.createElement('div');
   s.className = 'slot';
   const u = getAt(run, pos);
+  if (xfer && u && !samePos(xfer, pos)) s.classList.add('xt');
   if (u) s.appendChild(unitEl(u, pos));
   s.onclick = () => clickSlot(pos);
   s.ondragover = e => { e.preventDefault(); s.classList.add('over'); };
@@ -287,6 +300,15 @@ function slotEl(pos) {
 }
 function clickSlot(pos) {
   const u = getAt(run, pos);
+  if (xfer) {   // đang truyền ký ức: chạm quân nhận; chạm chỗ khác = hủy
+    const src = xfer; xfer = null;
+    if (u && !samePos(src, pos)) {
+      const r = sellUnit(run, src, { to: pos });
+      toast(r.ok ? 'Đã bán +' + r.price + '🪙 · truyền ký ức +' + r.shard.hp + ' HP, +' + r.shard.atk + ' ATK' : r.msg, r.ok);
+      if (r.ok) sel = null;
+    }
+    renderPrep(); return;
+  }
   if (selG !== null) {   // đang cầm gene từ kho: chạm quân để gắn, chạm ô trống để hủy
     if (u) { const r = attachGene(run, selG, pos); selG = null; toast(r.ok ? 'Đã gắn gene' : r.msg, r.ok); sel = r.ok ? pos : sel; }
     else selG = null;
@@ -319,21 +341,22 @@ function renderPrep() {
   for (let y = 0; y < CONFIG.ROWS; y++) for (let x = 0; x <= CONFIG.PLAYER_COLS[1]; x++) board.appendChild(slotEl({ zone: 'field', x, y }));
   const bench = $('bench'); bench.innerHTML = '';
   for (let i = 0; i < ECONOMY.BENCH_SIZE; i++) bench.appendChild(slotEl({ zone: 'bench', i }));
-  renderInfo(); renderShop(); renderEnemy(); renderGeneReward(); renderStash(); renderMerge();
+  renderInfo(); renderShop(); renderEnemy(); renderRuleObj(); renderMarket(); renderGeneReward(); renderStash(); renderMerge();
   const busy = runBusy(run);
   $('btnStart').disabled = fc === 0 || busy;
-  $('btnStart').textContent = fc === 0 ? 'Cần ít nhất 1 quân trên sân' : busy ? 'Chọn gene thưởng trước (hoặc bỏ qua)' : '⚔ Bắt đầu trận ải ' + w;
+  $('btnStart').textContent = fc === 0 ? 'Cần ít nhất 1 quân trên sân' : busy ? (run.market ? 'Chợ đen: mua hoặc từ chối trước' : run.mergeQueue.length ? 'Chọn gene giữ lại khi gộp sao' : 'Chọn gene thưởng trước (hoặc bỏ qua)') : '⚔ Bắt đầu trận ải ' + w;
   $('btnReroll').disabled = run.gold < ECONOMY.REROLL_COST;
 }
 
 function renderInfo() {
   const box = $('info'), u = sel ? getAt(run, sel) : null;
   if (!u) { sel = null; box.innerHTML = '<span class="muted">Chạm vào quân để xem chỉ số và bán. Chạm tiếp 1 ô để di chuyển / đổi chỗ.</span>'; return; }
+  if (xfer && !getAt(run, xfer)) xfer = null;
   const st = unitStats(u.type, u.star, u.shards), price = ECONOMY.SELL_UNIT[u.star];
   box.innerHTML = '<h3>' + TYPE_ICON[u.type] + ' ' + st.name + ' ' + '★'.repeat(u.star) + '</h3>' +
     '<div class="stats">HP <b>' + st.hp + '</b> · ATK <b>' + st.atk + '</b> · đánh mỗi ' + st.cd + 's · tầm ' + st.range + '</div>' +
     '<div class="stats">' + esc(st.note) + '</div>' +
-    '<div class="stats">Gene (' + u.genes.length + '/' + CONFIG.MAX_GENES_PER_UNIT + ')' + (u.shards.length ? ' · mảnh ký ức ' + u.shards.length : '') + '</div>';
+    '<div class="stats">Gene (' + u.genes.length + '/' + CONFIG.MAX_GENES_PER_UNIT + ')' + (u.shards.length ? ' · mảnh ký ức ' + u.shards.length + '/' + CONFIG.MEMORY_MAX : '') + '</div>';
   const ul = document.createElement('div'); ul.className = 'ulist';
   u.genes.forEach((gid, gi) => {
     const g = GENE_BY_ID[gid], row = document.createElement('div'); row.className = 'urow r-' + g.rarity; row.style.borderColor = '';
@@ -347,6 +370,10 @@ function renderInfo() {
   const b = document.createElement('button'); b.className = 'danger'; b.textContent = 'Bán +' + price + '🪙';
   b.onclick = () => { const r = sellUnit(run, sel); sel = null; toast(r.ok ? 'Đã bán +' + r.price + '🪙' + (r.lost ? ' (mất ' + r.lost + ' gene vì kho đầy)' : '') : r.msg, r.ok); renderPrep(); };
   box.appendChild(b);
+  const t = document.createElement('button'); t.textContent = 'Bán + Truyền ký ức';
+  t.title = '+25% HP/ATK gốc của quân này cho 1 quân khác (tối đa ' + CONFIG.MEMORY_MAX + ' mảnh/quân)';
+  t.onclick = () => { if (listUnits(run).length < 2) { toast('Cần quân khác để nhận ký ức'); return; } xfer = sel; renderPrep(); };
+  box.appendChild(t);
 }
 
 function renderShop() {
@@ -395,6 +422,34 @@ $('btnStart').onclick = () => {
   show('battleScr');
   startReplay(res);
 };
+
+// ======================= M5 UI: luật / nhiệm vụ / chợ đen =======================
+function renderRuleObj() {
+  const rb = $('ruleBox'), ob = $('objBox'); rb.innerHTML = ''; ob.innerHTML = '';
+  const add = (box, cls, html) => { const d = document.createElement('div'); d.className = 'banner ' + cls; d.innerHTML = html; box.appendChild(d); };
+  const cur = ruleForWave(run, run.wave), nx = nextRule(run, run.wave);
+  if (cur) { const r = RULES_BY_ID[cur], end = ruleSchedule(run).find(x => x.id === cur).end; add(rb, 'rule', '⚠ <b>Luật thế giới: ' + esc(r.name) + '</b> (đến hết ải ' + end + ')<br>' + esc(r.desc)); }
+  if (nx) { const r = RULES_BY_ID[nx.id]; add(rb, 'next', 'Sắp tới — ải ' + nx.start + ' (còn ' + nx.in + ' ải): <b>' + esc(r.name) + '</b> — ' + esc(r.desc)); }
+  const o = objectiveForWave(run, run.wave), rw = o.reward, parts = [];
+  if (rw.gold) parts.push('+' + rw.gold + '🪙'); if (rw.extraGeneChoice) parts.push('+' + rw.extraGeneChoice + ' lựa chọn gene'); if (rw.rareGene) parts.push('1 gene Hiếm');
+  add(ob, 'obj', '🎯 <b>Nhiệm vụ ải ' + run.wave + ': ' + esc(o.name) + '</b> — ' + esc(o.desc) + '<br>Thưởng: ' + parts.join(', '));
+  if (xfer) add(ob, 'xfer', '🧠 Chọn quân nhận ký ức (chạm ô khác để hủy)');
+}
+function renderMarket() {
+  const box = $('marketBox'), m = run.market;
+  if (!m) { box.hidden = true; return; }
+  box.hidden = false; box.innerHTML = '';
+  const t = document.createElement('div'); t.className = 'ttl'; t.innerHTML = '<b>🕯 Chợ đen</b> <span class="muted">1 gene Nguyền rủa — trả 1 mạng</span>';
+  box.appendChild(t);
+  const c = geneCard(m.gene, ' cursedbuy'); c.style.cursor = 'default'; box.appendChild(c);
+  const row = document.createElement('div'); row.className = 'btns'; row.style.marginTop = '6px';
+  const buy = document.createElement('button'); buy.className = 'danger'; buy.textContent = 'Trả 1 ❤ để nhận';
+  buy.disabled = run.lives <= 1 || run.stash.length >= ECONOMY.GENE_STASH_MAX;
+  buy.title = run.lives <= 1 ? 'Chỉ còn 1 mạng' : run.stash.length >= ECONOMY.GENE_STASH_MAX ? 'Kho gene đầy' : '';
+  buy.onclick = () => { const r = buyMarket(run); toast(r.ok ? 'Đã trả 1 mạng, gene vào kho' : r.msg, r.ok); renderPrep(); };
+  const no = document.createElement('button'); no.textContent = 'Từ chối'; no.onclick = () => { refuseMarket(run); renderPrep(); };
+  row.appendChild(buy); row.appendChild(no); box.appendChild(row);
+}
 
 // ======================= GENE UI (M4) =======================
 function geneCard(gid, extra) {
@@ -598,6 +653,9 @@ function showResult() {
     if (!r.applied) { r.applied = true; r.summary = applyBattleResult(run, r); }
     const s = r.summary;
     $('rLine3').textContent = '+' + (s.income + s.bonus) + '🪙 (thu nhập ' + s.income + (s.bonus ? ' + chuỗi thắng ' + s.bonus : '') + ')' + (s.loss ? ' · mất ' + s.loss + ' mạng' : '');
+    const ob = OBJECTIVES_BY_ID[s.obj.id], rw = s.obj.reward;
+    $('rLine2').textContent += ' · 🎯 ' + ob.name + ': ' + (s.obj.done ? 'ĐẠT' + (rw ? ' (' + [rw.gold ? '+' + rw.gold + '🪙' : '', rw.extraGeneChoice ? '+1 lựa chọn gene' : '', rw.rareGene ? 'gene Hiếm: ' + GENE_BY_ID[rw.rareGene].name : ''].filter(Boolean).join(', ') + ')' : '') : 'không đạt');
+    if (s.market) $('rLine3').textContent += ' · 🕯 Chợ đen mở';
     $('btnNext').textContent = run.over ? 'Xem tổng kết ▶' : 'Tiếp tục ▶';
     run.lastMsg = (s.win ? '✔ Thắng ải ' + s.wave : '✘ Thua ải ' + s.wave) + ': +' + (s.income + s.bonus) + '🪙' + (s.loss ? ', mất ' + s.loss + ' mạng' : '');
   } else {

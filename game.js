@@ -599,7 +599,7 @@ function newRun(seed) {
   seed = (seed === undefined ? Math.floor(Math.random() * 1e9) : seed) >>> 0;
   const run = { seed, rngN: 0, wave: 1, gold: ECONOMY.START_GOLD, lives: ECONOMY.START_LIVES, streak: 0, wins: 0, over: null,
     nextUid: 1, field: {}, bench: new Array(ECONOMY.BENCH_SIZE).fill(null), shop: [], history: [],
-    stash: [], geneChoice: null, mergeQueue: [] };
+    stash: [], geneChoice: null, mergeQueue: [], market: null };
   rollShop(run);
   return run;
 }
@@ -670,25 +670,36 @@ function buyUnit(run, slot) {
   while (run.bench.length > ECONOMY.BENCH_SIZE) run.bench.pop();
   return { ok: true, merged };
 }
-function sellUnit(run, pos) {
+// opts.to = vị trí quân nhận "Truyền ký ức": mảnh +25% HP/ATK gốc (theo sao) của quân bị bán, mỗi quân tối đa 3 mảnh.
+function sellUnit(run, pos, opts) {
   const u = getAt(run, pos);
   if (!u) return { ok: false, msg: 'Ô trống' };
+  let shard = null;
+  if (opts && opts.to) {
+    const t = getAt(run, opts.to);
+    if (!t || t === u) return { ok: false, msg: 'Quân nhận không hợp lệ' };
+    if (t.shards.length >= CONFIG.MEMORY_MAX) return { ok: false, msg: 'Quân nhận đã đủ ' + CONFIG.MEMORY_MAX + ' mảnh ký ức' };
+    const T = UNITS[u.type], sm = Math.pow(CONFIG.STAR_MULT, u.star - 1);
+    shard = { hp: Math.round(T.hp * sm * CONFIG.MEMORY_PCT), atk: Math.round(T.atk * sm * CONFIG.MEMORY_PCT) };
+    t.shards.push(shard);
+  }
   const price = ECONOMY.SELL_UNIT[u.star];
   run.gold += price; setAt(run, pos, null);
   let lost = 0;
   for (const g of u.genes) { if (run.stash.length < ECONOMY.GENE_STASH_MAX) run.stash.push(g); else lost++; }   // gene trên quân về kho
-  return { ok: true, price, lost };
+  return { ok: true, price, lost, shard };
 }
 const enemyForWave = run => generateEnemy(run.wave, mulberry32(run.seed * 7919 + run.wave));
 const battleSeed = run => (run.seed * 31 + run.wave) >>> 0;
 function buildBattleState(run) {
   const player = listUnits(run).filter(e => e.zone === 'field').map(e => ({ type: e.unit.type, star: e.unit.star, genes: e.unit.genes.slice(), shards: e.unit.shards.slice(), x: e.x, y: e.y }));
-  return { player, enemy: enemyForWave(run), ruleId: null };
+  return { player, enemy: enemyForWave(run), ruleId: ruleForWave(run, run.wave) };
 }
 // Áp kết quả trận vào run: thu nhập, chuỗi thắng, mất mạng, sang ải kế / kết thúc run.
 function applyBattleResult(run, res) {
   const win = res.winner === 'P', wave = run.wave, boss = isBossWave(wave);
   run.history.push({ wave, win, seconds: res.seconds });
+  const obj = objectiveForWave(run, wave), objDone = checkObjective(obj, res);
   if (win) { run.wins++; run.streak++; } else run.streak = 0;
   const income = ECONOMY.INCOME_BASE + Math.floor(wave / 2);
   const bonus = run.streak >= 5 ? ECONOMY.STREAK_BONUS[5] : run.streak >= 3 ? ECONOMY.STREAK_BONUS[3] : 0;
@@ -700,11 +711,47 @@ function applyBattleResult(run, res) {
   else {
     if (wave < ECONOMY.TOTAL_WAVES) run.wave++;   // thua ải 15 còn mạng: đánh lại ải 15
     rollShop(run);
-    run.geneChoice = { options: rollGeneChoices(run, wave, win ? ECONOMY.GENE_CHOICES_WIN : ECONOMY.GENE_CHOICES_LOSE), rerolled: false, wave, count: win ? ECONOMY.GENE_CHOICES_WIN : ECONOMY.GENE_CHOICES_LOSE };
+    let n = win ? ECONOMY.GENE_CHOICES_WIN : ECONOMY.GENE_CHOICES_LOSE;
+    if (objDone && obj.reward.extraGeneChoice) n += obj.reward.extraGeneChoice;
+    run.geneChoice = { options: rollGeneChoices(run, wave, n), rerolled: false, wave, count: n };
+    if (ECONOMY.BLACK_MARKET_AFTER.includes(wave)) run.market = { gene: rollGeneChoices(run, wave, 1, 'cursed')[0], wave };
   }
-  return { win, wave, income, bonus, loss, streak: run.streak, over: run.over };
+  let reward = null;
+  if (objDone && !run.over) {   // thưởng nhiệm vụ phụ: vàng / (+1 lựa chọn gene đã cộng ở trên) / gene Hiếm ngẫu nhiên thẳng vào kho (kho đầy => đổi thành vàng bán gene)
+    reward = { gold: 0, extraGeneChoice: obj.reward.extraGeneChoice || 0, rareGene: null };
+    if (obj.reward.gold) { run.gold += obj.reward.gold; reward.gold = obj.reward.gold; }
+    if (obj.reward.rareGene) {
+      const gid = rollGeneChoices(run, wave, 1, 'rare')[0];
+      if (run.stash.length < ECONOMY.GENE_STASH_MAX) { run.stash.push(gid); reward.rareGene = gid; }
+      else { run.gold += ECONOMY.SELL_GENE; reward.gold += ECONOMY.SELL_GENE; reward.rareGene = gid; reward.converted = true; }
+    }
+  }
+  return { win, wave, income, bonus, loss, streak: run.streak, over: run.over, obj: { id: obj.id, done: objDone, reward }, market: !!run.market };
 }
 
+
+// ======================= LUẬT / NHIỆM VỤ / CHỢ ĐEN (M5) =======================
+// Toàn bộ suy ra từ seed của run (thuần, không cần lưu): lịch luật và nhiệm vụ từng ải.
+// Luật: 4 luật khác nhau, bắt đầu ở các ải RULE_WAVES, mỗi luật kéo dài RULE_DURATION ải (áp cho cả hai phe).
+function ruleSchedule(run) {
+  const rng = mulberry32((run.seed ^ 0x9e3779b9) >>> 0), ids = RULES.map(r => r.id);
+  for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+  return ECONOMY.RULE_WAVES.map((start, i) => ({ start, end: start + ECONOMY.RULE_DURATION - 1, id: ids[i] }));
+}
+function ruleForWave(run, wave) { const r = ruleSchedule(run).find(x => wave >= x.start && wave <= x.end); return r ? r.id : null; }
+// Luật sắp tới (để báo trước): { id, start, in } hoặc null
+function nextRule(run, wave) { const r = ruleSchedule(run).find(x => x.start > wave); return r ? { id: r.id, start: r.start, in: r.start - wave } : null; }
+function objectiveForWave(run, wave) { return OBJECTIVES[Math.floor(mulberry32((run.seed * 104729 + wave * 7) >>> 0)() * OBJECTIVES.length)]; }
+// Chợ đen: sau ải 4/8/12 có 1 gene Nguyền rủa, trả bằng 1 mạng. Luôn có thể từ chối. Không cho mua nếu chỉ còn 1 mạng hoặc kho đầy.
+function buyMarket(run) {
+  const m = run.market;
+  if (!m) return { ok: false, msg: 'Không có chợ đen' };
+  if (run.lives <= 1) return { ok: false, msg: 'Chỉ còn 1 mạng — không thể trả' };
+  if (run.stash.length >= ECONOMY.GENE_STASH_MAX) return { ok: false, msg: 'Kho gene đầy' };
+  run.lives--; run.stash.push(m.gene); run.market = null;
+  return { ok: true, gene: m.gene };
+}
+function refuseMarket(run) { run.market = null; return { ok: true }; }
 
 // ======================= GENE TRONG RUN (M4) =======================
 // Gene thưởng, kho gene, gắn/gỡ/bán gene, chọn gene khi gộp sao. Gene tự chạy qua engine chung ở simulateBattle
@@ -775,7 +822,7 @@ function resolveMerge(run, keepIdx) {
   return { ok: true, lost };
 }
 // Chặn bắt đầu trận khi còn việc dở (chọn gene thưởng / chọn gene khi gộp)
-const runBusy = run => !!run.geneChoice || run.mergeQueue.length > 0;
+const runBusy = run => !!run.geneChoice || run.mergeQueue.length > 0 || !!run.market;
 
 // ======================= DEMO (console) =======================
 // Mở index.html -> F12 -> demoBattle(1, 3)  hoặc demoBattle(seed, wave, ruleId, verbose)
