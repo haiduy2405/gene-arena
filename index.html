@@ -6,20 +6,76 @@
 <title>GENE ARENA v0.1</title>
 <style>
   *{box-sizing:border-box}
+  [hidden]{display:none!important}
   body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0e1117;color:#dfe6f0;line-height:1.4}
   #app{max-width:1180px;margin:0 auto;padding:10px}
   h1{font-size:18px;margin:4px 0 8px;letter-spacing:1px}
   h1 small{font-weight:400;color:#7d8aa0;font-size:12px;margin-left:6px}
   .panel{background:#161b26;border:1px solid #232b3b;border-radius:10px;padding:10px;margin-bottom:10px}
+  .ttl{font-size:12px;color:#8b98ad;margin:2px 0 6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .ttl b{color:#dfe6f0}
+  .muted{color:#6d7a90;font-size:11px}
   .setup{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
   .setup label{display:flex;flex-direction:column;font-size:11px;color:#8b98ad;gap:3px}
   select,input,button{font:inherit;font-size:14px;background:#1d2433;color:#dfe6f0;border:1px solid #2c3750;border-radius:7px;padding:7px 10px}
   input[type=number]{width:120px}
   button{cursor:pointer}
-  button:hover{background:#26304a}
+  button:hover:not(:disabled){background:#26304a}
+  button:disabled{opacity:.4;cursor:not-allowed}
   button.primary{background:#2f6df6;border-color:#2f6df6;color:#fff;font-weight:600}
+  button.primary:hover:not(:disabled){background:#4a82ff}
+  button.big{width:100%;padding:12px;font-size:16px;margin-top:8px}
   button.on{background:#2f6df6;border-color:#2f6df6;color:#fff}
+  button.danger{border-color:#7a2d2d;color:#ff9c9c}
   .row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}
+  details{margin-top:12px;color:#8b98ad;font-size:13px}
+  details summary{cursor:pointer;margin-bottom:8px}
+
+  /* ---- HUD chuẩn bị ---- */
+  #prepHud{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;font-size:14px}
+  #prepHud b{color:#fff;font-size:16px}
+  .tag{background:#7a2d2d;color:#ffd0d0;font-size:11px;padding:2px 7px;border-radius:99px;margin-left:4px}
+  #prepMsg{font-size:13px;color:#e8c26a;margin:-2px 0 8px;min-height:18px}
+  #toast{font-size:12px;color:#ff9c9c;min-height:16px;margin-top:4px}
+  #toast.good{color:#6fe39a}
+
+  /* ---- Bàn đội hình ---- */
+  .boardwrap{display:flex;gap:6px;align-items:stretch}
+  .board{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;max-width:420px}
+  .frontline{writing-mode:vertical-rl;color:#d9443f;font-size:11px;letter-spacing:2px;text-align:center;opacity:.8}
+  .slot{aspect-ratio:1;background:#182646;border:1px dashed #2b3a63;border-radius:8px;position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;min-width:0}
+  .slot:nth-child(odd){background:#15213a}
+  .slot.over{outline:2px solid #6fd3ff}
+  .benchrow{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;max-width:420px}
+  .benchrow .slot{background:#1b1f2b;border-color:#343c52}
+  .unit{width:92%;height:92%;border-radius:8px;background:#2f6df6;border:2px solid #ffffff44;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;user-select:none;position:relative;overflow:hidden}
+  .unit.sel{border-color:#ffd23f;box-shadow:0 0 0 2px #ffd23f88}
+  .unit .ic{font-size:clamp(18px,4.6vw,32px);line-height:1.1}
+  .unit .st{font-size:10px;color:#ffd23f;height:11px;line-height:11px}
+  .unit .nm{font-size:10px;color:#fff;opacity:.9;white-space:nowrap}
+  .unit .gn{position:absolute;right:3px;top:2px;font-size:9px;color:#f1c453}
+
+  /* ---- Info quân ---- */
+  #info{margin-top:10px;background:#10151f;border:1px solid #232b3b;border-radius:8px;padding:8px 10px;font-size:13px;min-height:60px}
+  #info h3{margin:0 0 4px;font-size:14px}
+  #info .stats{color:#aab6ca;font-size:12px}
+  #info button{margin-top:6px}
+
+  /* ---- Shop ---- */
+  #shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px}
+  .card{background:#1d2433;border:1px solid #2c3750;border-radius:8px;padding:8px 6px;text-align:center;cursor:pointer;font-size:12px;position:relative}
+  .card:hover:not(.sold):not(.off){background:#26304a}
+  .card.sold{opacity:.25;cursor:default;border-style:dashed}
+  .card.off{opacity:.55;cursor:not-allowed}
+  .card .ic{font-size:28px;line-height:1.2}
+  .card .nm{font-weight:600;font-size:13px}
+  .card .sp{color:#9fb0c8;font-size:11px}
+  .card .pr{margin-top:3px;color:#ffd23f;font-weight:700}
+  .chips{display:flex;flex-wrap:wrap;gap:5px}
+  .chip{background:#2a1a20;border:1px solid #5a2a33;border-radius:6px;padding:3px 6px;font-size:12px}
+  .chip.rare{border-color:#e8c26a}
+
+  /* ---- Trận ---- */
   #stage{flex:1 1 640px;min-width:0;position:relative}
   #hud{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;margin-bottom:6px;color:#aab6ca}
   #hud b{color:#fff}
@@ -27,92 +83,309 @@
   canvas{display:block;width:100%;aspect-ratio:8/5;border-radius:8px;background:#10151f;touch-action:manipulation}
   #ctrl{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
   #ctrl .sp{flex:1}
-  #result{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#0b0f17ee;border:2px solid #2f6df6;border-radius:12px;padding:16px 22px;text-align:center;display:none;min-width:220px}
+  #result{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#0b0f17ee;border:2px solid #2f6df6;border-radius:12px;padding:16px 22px;text-align:center;display:none;min-width:230px;max-width:92%}
   #result.win{border-color:#3ecf6e}#result.lose{border-color:#ef4444}
   #result h2{margin:0 0 6px;font-size:22px}
   #result p{margin:3px 0;font-size:13px;color:#aab6ca}
+  #result .btns{display:flex;gap:8px;justify-content:center;margin-top:8px}
   #logwrap{flex:0 1 340px;min-width:260px;width:100%}
   #logwrap.hidden{display:none}
   #log{height:460px;overflow:auto;font:11px/1.45 ui-monospace,Consolas,monospace;background:#0b0f17;border:1px solid #232b3b;border-radius:8px;padding:6px;white-space:pre-wrap;word-break:break-word}
   #log div{padding:1px 0;border-bottom:1px solid #121826}
   #log .g{color:#f1c453}#log .d{color:#ff7a7a}#log .h{color:#6fe39a}#log .e{color:#fff;font-weight:700}#log .x{color:#8b98ad}
   .hint{font-size:11px;color:#6d7a90;margin-top:6px}
+
+  /* ---- Kết thúc run ---- */
+  #endScr h2{margin:0 0 6px;font-size:24px}
+  .endrow{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
   @media(max-width:700px){#log{height:240px}#logwrap{flex:1 1 100%}}
 </style>
 </head>
 <body>
 <div id="app">
-  <h1>GENE ARENA <small>v0.1 · M2 · trận thử (đội cố định, shop có ở M3)</small></h1>
+  <h1>GENE ARENA <small>v0.1 · M3</small></h1>
 
-  <div class="panel setup">
-    <label>Ải<select id="selWave"></select></label>
-    <label>Luật thế giới<select id="selRule"></select></label>
-    <label>Seed<input id="inSeed" type="number" value="1"></label>
-    <button id="btnDice" title="Seed ngẫu nhiên">🎲</button>
-    <button id="btnRun" class="primary">▶ Chạy trận</button>
-  </div>
-
-  <div class="row">
-    <div id="stage" class="panel">
-      <div id="hud">
-        <span>⏱ <b id="hTime">0.0</b>s / 60s</span>
-        <span>Ta <b id="hP">-</b></span>
-        <span>Địch <b id="hE">-</b></span>
-        <span>Seed <b id="hSeed">-</b></span>
-      </div>
-      <div id="rulebar"></div>
-      <canvas id="c"></canvas>
-      <div id="result"><h2 id="rTitle"></h2><p id="rLine1"></p><p id="rLine2"></p><button id="btnRe" class="primary">↻ Phát lại</button></div>
-      <div id="ctrl">
-        <button id="bPause">⏸ Tạm dừng</button>
-        <button data-sp="1" class="spd on">x1</button>
-        <button data-sp="2" class="spd">x2</button>
-        <button data-sp="4" class="spd">x4</button>
-        <button id="bSkip">⏭ Bỏ qua</button>
-        <button id="bReplay">↻ Phát lại</button>
-        <span class="sp"></span>
-        <button id="bLog" class="on">Log</button>
-      </div>
-      <div class="hint">Phím: Space = tạm dừng · 1/2/4 = tốc độ · S = bỏ qua · R = phát lại. Chạy lại cùng seed ra kết quả y hệt.</div>
+  <!-- ============ MÀN HÌNH CHÍNH ============ -->
+  <section id="titleScr" class="panel">
+    <div class="setup">
+      <label>Seed run (bỏ trống = ngẫu nhiên)<input id="inRunSeed" type="number" placeholder="ngẫu nhiên"></label>
+      <button id="btnNewRun" class="primary">▶ Run mới</button>
     </div>
-    <div id="logwrap" class="panel"><div id="log"></div></div>
-  </div>
+    <p class="muted">15 ải · 5 mạng · 10 vàng đầu run. Mua quân, xếp đội, gộp 3 quân cùng loại + cùng sao thành sao cao hơn. Gene, luật thế giới, nhiệm vụ phụ có ở các mốc sau.</p>
+    <details>
+      <summary>Trận thử (dev) — đội cố định, chọn ải / luật / seed</summary>
+      <div class="setup">
+        <label>Ải<select id="selWave"></select></label>
+        <label>Luật thế giới<select id="selRule"></select></label>
+        <label>Seed<input id="inSeed" type="number" value="1"></label>
+        <button id="btnDice" title="Seed ngẫu nhiên">🎲</button>
+        <button id="btnRun">▶ Chạy trận thử</button>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ CHUẨN BỊ ============ -->
+  <section id="prepScr" hidden>
+    <div class="panel" id="prepHud"></div>
+    <div id="prepMsg"></div>
+    <div class="row">
+      <div class="panel" style="flex:1 1 380px;min-width:0">
+        <div class="ttl"><b>Đội hình</b> <span id="fieldCnt"></span> <span class="muted">cột phải = tiền tuyến (sát địch)</span></div>
+        <div class="boardwrap"><div class="board" id="board"></div><div class="frontline">TIỀN TUYẾN ▶ ĐỊCH</div></div>
+        <div class="ttl" style="margin-top:10px"><b>Ghế dự bị</b> <span class="muted">kéo-thả hoặc chạm quân rồi chạm ô đích</span></div>
+        <div class="benchrow" id="bench"></div>
+        <div id="info"></div>
+        <div id="toast"></div>
+      </div>
+      <div class="panel" style="flex:1 1 380px;min-width:0">
+        <div class="ttl"><b>Shop</b> <span class="muted">mua 3🪙 · bán 2/5/9🪙</span> <button id="btnReroll">🔄 Làm mới (1🪙)</button></div>
+        <div id="shop"></div>
+        <div class="ttl" style="margin-top:12px"><b id="enemyTtl">Địch</b> <span class="muted" id="enemyNote"></span></div>
+        <div class="chips" id="enemyPrev"></div>
+        <button id="btnStart" class="primary big">⚔ Bắt đầu trận</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TRẬN ĐẤU ============ -->
+  <section id="battleScr" hidden>
+    <div class="row">
+      <div id="stage" class="panel">
+        <div id="hud">
+          <span>⏱ <b id="hTime">0.0</b>s / 60s</span>
+          <span>Ta <b id="hP">-</b></span>
+          <span>Địch <b id="hE">-</b></span>
+          <span>Seed <b id="hSeed">-</b></span>
+        </div>
+        <div id="rulebar"></div>
+        <canvas id="c"></canvas>
+        <div id="result"><h2 id="rTitle"></h2><p id="rLine1"></p><p id="rLine2"></p><p id="rLine3"></p>
+          <div class="btns"><button id="btnRe">↻ Phát lại</button><button id="btnNext" class="primary">Tiếp tục ▶</button></div></div>
+        <div id="ctrl">
+          <button id="bPause">⏸ Tạm dừng</button>
+          <button data-sp="1" class="spd on">x1</button>
+          <button data-sp="2" class="spd">x2</button>
+          <button data-sp="4" class="spd">x4</button>
+          <button id="bSkip">⏭ Bỏ qua</button>
+          <button id="bReplay">↻ Phát lại</button>
+          <span class="sp"></span>
+          <button id="bLog" class="on">Log</button>
+        </div>
+        <div class="hint">Phím: Space = tạm dừng · 1/2/4 = tốc độ · S = bỏ qua · R = phát lại.</div>
+      </div>
+      <div id="logwrap" class="panel"><div id="log"></div></div>
+    </div>
+  </section>
+
+  <!-- ============ KẾT THÚC RUN ============ -->
+  <section id="endScr" class="panel" hidden>
+    <h2 id="endTitle"></h2>
+    <div id="endBody"></div>
+    <button id="btnAgain" class="primary big">↻ Chơi lại</button>
+  </section>
 </div>
 
 <script src="data.js"></script>
 <script src="game.js"></script>
 <script>
-// ======================= RENDER / PHÁT LẠI (M2) =======================
+// ======================= UI =======================
+// Logic run (shop, gộp sao, kinh tế) nằm trong game.js; file này chỉ vẽ và gọi hàm.
+const $ = id => document.getElementById(id);
+const TYPE_ICON = { tank: '🛡️', fighter: '⚔️', archer: '🏹', mage: '🔮', healer: '💚', assassin: '🗡️' };
+let run = null;          // run hiện tại
+let mode = 'run';        // 'run' | 'dev' (trận thử)
+let cur = 'titleScr';
+let sel = null;          // quân đang chọn trong màn chuẩn bị: pos
+let dragSrc = null;
+
+function show(id) {
+  cur = id;
+  for (const s of ['titleScr', 'prepScr', 'battleScr', 'endScr']) $(s).hidden = (s !== id);
+  if (id === 'battleScr') { resize(); }
+}
+const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const samePos = (a, b) => a && b && a.zone === b.zone && a.x === b.x && a.y === b.y && a.i === b.i;
+function unitStats(type, star, shards) {
+  const T = UNITS[type], m = Math.pow(CONFIG.STAR_MULT, star - 1);
+  let hp = T.hp * m, atk = T.atk * m;
+  for (const s of (shards || [])) { hp += s.hp; atk += s.atk; }
+  return { hp: Math.round(hp), atk: Math.round(atk), cd: T.cd, range: T.range, note: T.note, name: T.name };
+}
+function toast(msg, good) { const t = $('toast'); t.textContent = msg || ''; t.className = good ? 'good' : ''; }
+
+// ======================= MÀN CHÍNH =======================
+(function initTitle() {
+  const sw = $('selWave');
+  for (let w = 1; w <= ECONOMY.TOTAL_WAVES; w++) {
+    const o = document.createElement('option'); o.value = w;
+    o.textContent = 'Ải ' + w + (isBossWave(w) ? ' (Boss)' : ''); sw.appendChild(o);
+  }
+  $('selRule').innerHTML = '<option value="">Không có luật</option>' + RULES.map(r => '<option value="' + r.id + '">' + r.name + '</option>').join('');
+})();
+$('btnNewRun').onclick = () => {
+  const v = $('inRunSeed').value;
+  run = newRun(v === '' ? undefined : parseInt(v, 10));
+  sel = null; toast('');
+  showPrep();
+};
+$('btnAgain').onclick = () => { show('titleScr'); };
+$('btnDice').onclick = () => { $('inSeed').value = Math.floor(Math.random() * 1e6); };
+
+// ======================= CHUẨN BỊ =======================
+function showPrep() { show('prepScr'); renderPrep(); }
+
+function unitEl(u, pos) {
+  const d = document.createElement('div');
+  d.className = 'unit' + (samePos(sel, pos) ? ' sel' : '');
+  d.draggable = true;
+  d.innerHTML = '<span class="ic">' + TYPE_ICON[u.type] + '</span><span class="st">' + '★'.repeat(u.star) + '</span><span class="nm">' + UNITS[u.type].name + '</span>' +
+    (u.genes.length ? '<span class="gn">✦' + u.genes.length + '</span>' : '');
+  d.ondragstart = e => { dragSrc = pos; sel = pos; e.dataTransfer.setData('text/plain', 'u'); };
+  return d;
+}
+function slotEl(pos) {
+  const s = document.createElement('div');
+  s.className = 'slot';
+  const u = getAt(run, pos);
+  if (u) s.appendChild(unitEl(u, pos));
+  s.onclick = () => clickSlot(pos);
+  s.ondragover = e => { e.preventDefault(); s.classList.add('over'); };
+  s.ondragleave = () => s.classList.remove('over');
+  s.ondrop = e => { e.preventDefault(); s.classList.remove('over'); if (dragSrc) doMove(dragSrc, pos); dragSrc = null; };
+  return s;
+}
+function clickSlot(pos) {
+  const u = getAt(run, pos);
+  if (!sel) { if (u) { sel = pos; renderPrep(); } return; }
+  if (samePos(sel, pos)) { sel = null; renderPrep(); return; }
+  doMove(sel, pos);
+}
+function doMove(src, dst) {
+  const r = moveUnit(run, src, dst);
+  sel = null;
+  toast(r.ok ? '' : r.msg);
+  renderPrep();
+}
+
+function renderPrep() {
+  if (!run) return;
+  const w = run.wave, lim = fieldLimit(w);
+  $('prepHud').innerHTML =
+    '<span>Ải <b>' + w + '</b>/' + ECONOMY.TOTAL_WAVES + (isBossWave(w) ? '<span class="tag">BOSS</span>' : '') + '</span>' +
+    '<span>❤ <b>' + run.lives + '</b>/' + ECONOMY.START_LIVES + '</span>' +
+    '<span>🪙 <b>' + run.gold + '</b></span>' +
+    '<span>Chuỗi thắng <b>' + run.streak + '</b></span>' +
+    '<span class="muted">seed ' + run.seed + '</span>';
+  $('prepMsg').textContent = run.lastMsg || '';
+  const fc = fieldCount(run);
+  $('fieldCnt').textContent = '(' + fc + '/' + lim + ')';
+  const board = $('board'); board.innerHTML = '';
+  for (let y = 0; y < CONFIG.ROWS; y++) for (let x = 0; x <= CONFIG.PLAYER_COLS[1]; x++) board.appendChild(slotEl({ zone: 'field', x, y }));
+  const bench = $('bench'); bench.innerHTML = '';
+  for (let i = 0; i < ECONOMY.BENCH_SIZE; i++) bench.appendChild(slotEl({ zone: 'bench', i }));
+  renderInfo(); renderShop(); renderEnemy();
+  $('btnStart').disabled = fc === 0;
+  $('btnStart').textContent = fc === 0 ? 'Cần ít nhất 1 quân trên sân' : '⚔ Bắt đầu trận ải ' + w;
+  $('btnReroll').disabled = run.gold < ECONOMY.REROLL_COST;
+}
+
+function renderInfo() {
+  const box = $('info'), u = sel ? getAt(run, sel) : null;
+  if (!u) { sel = null; box.innerHTML = '<span class="muted">Chạm vào quân để xem chỉ số và bán. Chạm tiếp 1 ô để di chuyển / đổi chỗ.</span>'; return; }
+  const st = unitStats(u.type, u.star, u.shards), price = ECONOMY.SELL_UNIT[u.star];
+  box.innerHTML = '<h3>' + TYPE_ICON[u.type] + ' ' + st.name + ' ' + '★'.repeat(u.star) + '</h3>' +
+    '<div class="stats">HP <b>' + st.hp + '</b> · ATK <b>' + st.atk + '</b> · đánh mỗi ' + st.cd + 's · tầm ' + st.range + '</div>' +
+    '<div class="stats">' + esc(st.note) + '</div>' +
+    '<div class="stats">Gene: ' + (u.genes.length ? u.genes.map(g => '<b>' + esc(GENE_BY_ID[g].name) + '</b>').join(', ') : 'chưa có') +
+    (u.shards.length ? ' · mảnh ký ức ' + u.shards.length : '') + '</div>';
+  const b = document.createElement('button'); b.className = 'danger'; b.textContent = 'Bán +' + price + '🪙';
+  b.onclick = () => { const r = sellUnit(run, sel); sel = null; toast(r.ok ? 'Đã bán +' + r.price + '🪙' : r.msg, r.ok); renderPrep(); };
+  box.appendChild(b);
+}
+
+function renderShop() {
+  const box = $('shop'); box.innerHTML = '';
+  run.shop.forEach((type, i) => {
+    const c = document.createElement('div');
+    if (!type) { c.className = 'card sold'; c.innerHTML = '<div class="ic">·</div><div class="sp">đã mua</div>'; box.appendChild(c); return; }
+    const st = unitStats(type, 1), cant = run.gold < ECONOMY.BUY_COST;
+    c.className = 'card' + (cant ? ' off' : '');
+    c.innerHTML = '<div class="ic">' + TYPE_ICON[type] + '</div><div class="nm">' + st.name + '</div>' +
+      '<div class="sp">HP ' + st.hp + ' · ATK ' + st.atk + '</div><div class="sp">⏱' + st.cd + 's · 🎯' + st.range + '</div><div class="pr">🪙 ' + ECONOMY.BUY_COST + '</div>';
+    c.title = st.note;
+    c.onclick = () => {
+      const r = buyUnit(run, i);
+      if (!r.ok) { toast(r.msg); return; }
+      sel = null;
+      toast(r.merged.length ? '✨ Gộp sao: ' + r.merged.map(m => UNITS[m.type].name + ' ' + '★'.repeat(m.star)).join(', ') : '', true);
+      renderPrep();
+    };
+    box.appendChild(c);
+  });
+}
+$('btnReroll').onclick = () => { const r = rerollShop(run); toast(r.ok ? '' : r.msg); renderPrep(); };
+
+function renderEnemy() {
+  const defs = enemyForWave(run), mult = 1 + ENEMY.SCALE_PER_WAVE * (run.wave - 1);
+  $('enemyTtl').textContent = 'Địch ải ' + run.wave + (isBossWave(run.wave) ? ' (BOSS)' : '');
+  $('enemyNote').textContent = defs.length + ' quân · chỉ số ×' + mult.toFixed(2);
+  const box = $('enemyPrev'); box.innerHTML = '';
+  const order = defs.slice().sort((a, b) => b.x - a.x);
+  for (const d of order) {
+    const c = document.createElement('span');
+    const rare = d.genes.some(g => GENE_BY_ID[g].rarity !== 'common');
+    c.className = 'chip' + (rare ? ' rare' : '');
+    c.textContent = TYPE_ICON[d.type] + (d.star > 1 ? '★' + d.star : '') + (d.genes.length ? ' ✦' + d.genes.length : '');
+    c.title = UNITS[d.type].name + ' sao ' + d.star + (d.genes.length ? ' · ' + d.genes.map(g => GENE_BY_ID[g].name).join(', ') : '');
+    box.appendChild(c);
+  }
+}
+
+$('btnStart').onclick = () => {
+  if (!run || fieldCount(run) === 0) return;
+  mode = 'run'; sel = null;
+  const res = simulateBattle(buildBattleState(run), battleSeed(run));   // thuần logic
+  res.wave = run.wave;
+  show('battleScr');
+  startReplay(res);
+};
+
+// ======================= KẾT THÚC RUN =======================
+function showEnd() {
+  show('endScr');
+  const won = run.over === 'win';
+  $('endTitle').textContent = won ? '🏆 THẮNG RUN!' : '💀 THUA RUN';
+  $('endTitle').style.color = won ? '#3ecf6e' : '#ef4444';
+  const units = listUnits(run).map(e => e.unit);
+  const genes = []; units.forEach(u => u.genes.forEach(g => genes.push(GENE_BY_ID[g].name)));
+  $('endBody').innerHTML =
+    '<p>Ải đạt được: <b>' + run.wave + '</b>/' + ECONOMY.TOTAL_WAVES + ' · trận thắng: <b>' + run.wins + '</b>/' + run.history.length + ' · mạng còn: <b>' + Math.max(0, run.lives) + '</b> · seed ' + run.seed + '</p>' +
+    '<div class="ttl"><b>Đội hình cuối</b></div><div class="endrow chips">' +
+    (units.length ? units.map(u => '<span class="chip">' + TYPE_ICON[u.type] + ' ' + UNITS[u.type].name + ' ' + '★'.repeat(u.star) + '</span>').join('') : '<span class="muted">không còn quân</span>') + '</div>' +
+    '<div class="ttl"><b>Gene</b></div><div class="muted">' + (genes.length ? esc(genes.join(', ')) : 'chưa có (gene ra mắt ở M4)') + '</div>';
+}
+
+// ======================= RENDER / PHÁT LẠI TRẬN (M2) =======================
 // Render chỉ PHÁT LẠI danh sách events do simulateBattle trả về; không chứa logic chiến đấu.
 // Mọi event mang giá trị tuyệt đối (hp, sh, x, y) nên áp lại nhiều lần vẫn đúng.
-const $ = id => document.getElementById(id);
 const canvas = $('c'), ctx = canvas.getContext('2d');
-const TYPE_ICON = { tank: '🛡️', fighter: '⚔️', archer: '🏹', mage: '🔮', healer: '💚', assassin: '🗡️' };
 const COL_P = '#2f6df6', COL_E = '#d9443f';
 let R = null;            // trạng thái phát lại
 let speed = 1;           // x1 / x2 / x4
 let showLog = true;
 let lastT = performance.now();
 
-// ---------- Khởi tạo form ----------
-(function initForm() {
-  const sw = $('selWave');
-  for (let w = 1; w <= ECONOMY.TOTAL_WAVES; w++) {
-    const o = document.createElement('option'); o.value = w;
-    o.textContent = 'Ải ' + w + (ECONOMY.BOSS_WAVES.includes(w) ? ' (Boss)' : ''); sw.appendChild(o);
-  }
-  const sr = $('selRule');
-  sr.innerHTML = '<option value="">Không có luật</option>' + RULES.map(r => '<option value="' + r.id + '">' + r.name + '</option>').join('');
-})();
-
-// ---------- Chạy trận ----------
-function runBattle() {
+function runDevBattle() {
   const wave = +$('selWave').value, seed = (parseInt($('inSeed').value, 10) || 1) >>> 0, ruleId = $('selRule').value || null;
   const enemy = generateEnemy(wave, mulberry32(seed * 7919 + wave));
-  const res = simulateBattle({ player: DEMO_TEAM, enemy, ruleId }, seed);   // thuần logic
+  const res = simulateBattle({ player: DEMO_TEAM, enemy, ruleId }, seed);
   res.wave = wave;
+  mode = 'dev';
+  show('battleScr');
   startReplay(res);
 }
+$('btnRun').onclick = runDevBattle;
+
 function startReplay(res) {
   R = { res, idx: 0, tick: 0, paused: false, done: false, units: {}, fx: [], beams: [], entries: formatLogEntries(res, false), logIdx: 0 };
   for (const u of res.initial) {
@@ -128,7 +401,6 @@ function startReplay(res) {
   advance(0, true);
 }
 
-// ---------- Áp event ----------
 function advance(target, anim) {
   const ev = R.res.events;
   while (R.idx < ev.length && ev[R.idx].t <= target) applyEvent(ev[R.idx++], anim);
@@ -176,7 +448,6 @@ function applyEvent(e, anim) {
   }
 }
 
-// ---------- Log ----------
 function appendLogs(upTo) {
   const box = $('log'), frag = document.createDocumentFragment(), near = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
   let n = 0;
@@ -192,16 +463,31 @@ function appendLogs(upTo) {
   if (near || R.done) box.scrollTop = box.scrollHeight;
 }
 
-// ---------- Kết quả ----------
+// Kết quả trận. Chế độ run: áp kết quả vào run ĐÚNG 1 LẦN (res.applied) rồi hiện nút "Tiếp tục".
 function showResult() {
   const r = R.res, el = $('result'), win = r.winner === 'P';
   el.className = win ? 'win' : 'lose'; el.style.display = 'block';
   $('rTitle').textContent = win ? '🏆 TA THẮNG' : r.winner === 'draw' ? '⏱ HÒA (tính là thua)' : '💀 ĐỊCH THẮNG';
   $('rLine1').textContent = 'Thời gian ' + r.seconds.toFixed(1) + 's · quân ta chết ' + r.stats.deaths.P + ' · địch chết ' + r.stats.deaths.E;
   $('rLine2').textContent = 'Sát thương gene: ' + r.stats.damageByGene.P + ' · hồi máu đội: ' + r.stats.healTotal.P;
+  if (mode === 'run') {
+    if (!r.applied) { r.applied = true; r.summary = applyBattleResult(run, r); }
+    const s = r.summary;
+    $('rLine3').textContent = '+' + (s.income + s.bonus) + '🪙 (thu nhập ' + s.income + (s.bonus ? ' + chuỗi thắng ' + s.bonus : '') + ')' + (s.loss ? ' · mất ' + s.loss + ' mạng' : '');
+    $('btnNext').textContent = run.over ? 'Xem tổng kết ▶' : 'Tiếp tục ▶';
+    run.lastMsg = (s.win ? '✔ Thắng ải ' + s.wave : '✘ Thua ải ' + s.wave) + ': +' + (s.income + s.bonus) + '🪙' + (s.loss ? ', mất ' + s.loss + ' mạng' : '');
+  } else {
+    $('rLine3').textContent = '';
+    $('btnNext').textContent = 'Về menu ▶';
+  }
 }
+$('btnNext').onclick = () => {
+  if (mode !== 'run') { show('titleScr'); return; }
+  sel = null; toast('');
+  if (run.over) showEnd(); else showPrep();
+};
 
-// ---------- Điều khiển ----------
+// ---------- Điều khiển phát lại ----------
 function setSpeed(s) { speed = s; document.querySelectorAll('.spd').forEach(b => b.classList.toggle('on', +b.dataset.sp === s)); }
 document.querySelectorAll('.spd').forEach(b => b.onclick = () => setSpeed(+b.dataset.sp));
 function togglePause() { if (!R) return; R.paused = !R.paused; $('bPause').textContent = R.paused ? '▶ Tiếp tục' : '⏸ Tạm dừng'; }
@@ -212,11 +498,9 @@ function skip() {
 }
 function replay() { if (R) startReplay(R.res); }
 $('bPause').onclick = togglePause; $('bSkip').onclick = skip; $('bReplay').onclick = replay; $('btnRe').onclick = replay;
-$('btnRun').onclick = runBattle;
-$('btnDice').onclick = () => { $('inSeed').value = Math.floor(Math.random() * 1e6); };
 $('bLog').onclick = () => { showLog = !showLog; $('logwrap').classList.toggle('hidden', !showLog); $('bLog').classList.toggle('on', showLog); resize(); };
 window.addEventListener('keydown', e => {
-  if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+  if (cur !== 'battleScr' || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
   if (e.code === 'Space') { e.preventDefault(); togglePause(); }
   else if (e.key === '1') setSpeed(1); else if (e.key === '2') setSpeed(2); else if (e.key === '4') setSpeed(4);
   else if (e.key === 's' || e.key === 'S') skip(); else if (e.key === 'r' || e.key === 'R') replay();
@@ -229,7 +513,6 @@ function resize() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 window.addEventListener('resize', resize);
-
 function hpColor(r) { return r > 0.6 ? '#3ecf6e' : r > 0.3 ? '#e8c43a' : '#ef4444'; }
 
 function draw(dt) {
@@ -242,10 +525,10 @@ function draw(dt) {
     if (rule && rule.rows && !rule.rows.includes(y)) { ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(x * cs, y * cs, cs, cs); }
   }
   ctx.strokeStyle = '#ffffff22'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(4 * cs, 0); ctx.lineTo(4 * cs, H); ctx.stroke();
-  if (!R) { ctx.fillStyle = '#6d7a90'; ctx.font = '15px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Chọn ải / seed rồi bấm "Chạy trận"', W / 2, H / 2); return; }
+  if (!R) return;
 
   const tick = R.tick, units = Object.values(R.units).sort((a, b) => a.py - b.py || a.id - b.id);
-  for (const u of units) {   // trượt mượt tới ô đích
+  for (const u of units) {
     const k = Math.min(1, dt * 14 * Math.max(1, speed));
     u.px += (u.x - u.px) * k; u.py += (u.y - u.py) * k;
     if (!u.alive) u.fade = Math.max(0, u.fade - dt * 2.5 * speed);
@@ -262,24 +545,20 @@ function draw(dt) {
     ctx.font = Math.round(cs * 0.34) + 'px system-ui,"Segoe UI Emoji","Noto Color Emoji"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#fff'; ctx.fillText(TYPE_ICON[u.type] || '?', cx, cy + 1);
     if (u.star > 1) { ctx.font = 'bold ' + Math.round(cs * 0.16) + 'px system-ui'; ctx.fillStyle = '#ffd23f'; ctx.fillText('★'.repeat(u.star), cx, cy + r + cs * 0.1); }
-    // thanh máu + giáp
     const bw = cs * 0.74, bh = Math.max(4, cs * 0.075), bx = cx - bw / 2, by = cy - r - bh - 3;
     ctx.fillStyle = '#000a'; ctx.fillRect(bx, by, bw, bh);
     ctx.fillStyle = hpColor(u.hp / u.maxHP); ctx.fillRect(bx, by, bw * Math.max(0, Math.min(1, u.hp / u.maxHP)), bh);
     if (u.sh > 0) { ctx.fillStyle = '#6fd3ff'; ctx.fillRect(bx, by - 3, bw * Math.min(1, u.sh / u.maxHP), 3); }
-    // icon trạng thái
     let ic = ''; if (u.burnUntil > tick) ic += '🔥'; if (u.slowUntil > tick) ic += '🐌'; if (u.stunUntil > tick) ic += '💫';
     if (ic) { ctx.font = Math.round(cs * 0.17) + 'px system-ui,"Noto Color Emoji"'; ctx.fillStyle = '#fff'; ctx.fillText(ic, cx, by - 9); }
     ctx.globalAlpha = 1;
   }
-  // tia bắn
   for (let i = R.beams.length - 1; i >= 0; i--) {
     const b = R.beams[i]; b.age += dt * speed;
     if (b.age > 0.14) { R.beams.splice(i, 1); continue; }
     ctx.globalAlpha = 1 - b.age / 0.14; ctx.strokeStyle = b.c; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo((b.sx + 0.5) * cs, (b.sy + 0.5) * cs); ctx.lineTo((b.dx + 0.5) * cs, (b.dy + 0.5) * cs); ctx.stroke(); ctx.globalAlpha = 1;
   }
-  // chữ bay (sát thương / tên gene)
   const life = 0.95;
   for (let i = R.fx.length - 1; i >= 0; i--) {
     const f = R.fx[i]; f.age += dt * Math.min(speed, 2.5);
@@ -302,14 +581,17 @@ function updateHud() {
 
 function frame(now) {
   const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
-  if (R && !R.paused && !R.done) {
-    R.tick += dt * CONFIG.TICKS_PER_SEC * speed;   // tick cố định 50ms game; render chỉ phát lại theo tốc độ
-    advance(R.tick, true);
+  if (cur === 'battleScr' && R) {
+    if (!R.paused && !R.done) {
+      R.tick += dt * CONFIG.TICKS_PER_SEC * speed;   // tick cố định 50ms game; render chỉ phát lại theo tốc độ
+      advance(R.tick, true);
+    }
+    const want = Math.round((canvas.clientWidth || 640) * (window.devicePixelRatio || 1));
+    if (canvas.width !== want) resize();
+    draw(dt); updateHud();
   }
-  draw(dt); updateHud();
   requestAnimationFrame(frame);
 }
-resize();
 requestAnimationFrame(frame);
 </script>
 </body>

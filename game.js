@@ -582,6 +582,120 @@ function defsSortedByRole(defs) {
   return defs.slice().sort((a, b) => ENEMY.ROLE_COL[a.type] - ENEMY.ROLE_COL[b.type]);
 }
 
+// ======================= RUN (M3) =======================
+// Trạng thái 1 run + shop / kinh tế / xếp quân / gộp sao. Thuần logic (không DOM) để test bằng Node và dùng cho auto-playtest (M6).
+// run = { seed, rngN, wave, gold, lives, streak, wins, over:null|'win'|'lose', nextUid,
+//         field:{"x,y":unit}, bench:[unit|null x4], shop:[type|null x5], history:[] }
+// unit = { uid, type, star, genes:[], shards:[] }
+// Quy ước đơn giản hóa: shop tự làm mới MIỄN PHÍ mỗi ải; thu nhập nhận sau mỗi trận (cả thắng lẫn thua);
+// chuỗi thắng >=5 => +4, 3-4 => +2; thua ải 15 khi còn mạng => đánh lại ải 15; ghế đầy chỉ mua được nếu gộp ngay;
+// gộp sao: giữ tối đa 2 gene đầu tiên (hộp chọn gene khi gộp làm ở M4).
+const fKey = (x, y) => x + ',' + y;
+function runRand(run) { run.rngN++; return mulberry32((run.seed ^ Math.imul(run.rngN, 2654435761)) >>> 0)(); }   // RNG của run, lưu được bằng (seed, rngN)
+function fieldLimit(wave) { let n = 6; for (const f of ECONOMY.FIELD_SIZE) if (wave >= f.fromWave) n = f.size; return n; }
+function isBossWave(w) { return ECONOMY.BOSS_WAVES.includes(w); }
+function newRun(seed) {
+  seed = (seed === undefined ? Math.floor(Math.random() * 1e9) : seed) >>> 0;
+  const run = { seed, rngN: 0, wave: 1, gold: ECONOMY.START_GOLD, lives: ECONOMY.START_LIVES, streak: 0, wins: 0, over: null,
+    nextUid: 1, field: {}, bench: new Array(ECONOMY.BENCH_SIZE).fill(null), shop: [], history: [] };
+  rollShop(run);
+  return run;
+}
+function makeRunUnit(run, type) { return { uid: run.nextUid++, type, star: 1, genes: [], shards: [] }; }
+function rollShop(run) {
+  const keys = Object.keys(UNITS);
+  run.shop = [];
+  for (let i = 0; i < ECONOMY.SHOP_SLOTS; i++) run.shop.push(keys[Math.floor(runRand(run) * keys.length)]);
+}
+function rerollShop(run) {
+  if (run.gold < ECONOMY.REROLL_COST) return { ok: false, msg: 'Không đủ vàng' };
+  run.gold -= ECONOMY.REROLL_COST; rollShop(run);
+  return { ok: true };
+}
+const fieldCount = run => Object.keys(run.field).length;
+// Danh sách quân theo thứ tự cố định: sân (theo khóa), rồi ghế dự bị
+function listUnits(run) {
+  const out = [];
+  for (const k of Object.keys(run.field).sort()) { const [x, y] = k.split(',').map(Number); out.push({ unit: run.field[k], zone: 'field', x, y }); }
+  run.bench.forEach((u, i) => { if (u) out.push({ unit: u, zone: 'bench', i }); });
+  return out;
+}
+function getAt(run, pos) { return pos.zone === 'field' ? run.field[fKey(pos.x, pos.y)] : run.bench[pos.i]; }
+function setAt(run, pos, unit) {
+  if (pos.zone === 'field') { if (unit) run.field[fKey(pos.x, pos.y)] = unit; else delete run.field[fKey(pos.x, pos.y)]; }
+  else run.bench[pos.i] = unit || null;
+}
+// moveUnit: đặt/đổi chỗ (sân<->sân, sân<->ghế, ghế<->ghế). pos = {zone:'field',x,y} | {zone:'bench',i}
+function moveUnit(run, src, dst) {
+  const a = getAt(run, src);
+  if (!a) return { ok: false, msg: 'Ô trống' };
+  if (dst.zone === 'field' && (dst.x < 0 || dst.x > CONFIG.PLAYER_COLS[1] || dst.y < 0 || dst.y >= CONFIG.ROWS)) return { ok: false, msg: 'Ô không hợp lệ' };
+  if (dst.zone === 'bench' && (dst.i < 0 || dst.i >= ECONOMY.BENCH_SIZE)) return { ok: false, msg: 'Ghế không hợp lệ' };
+  const b = getAt(run, dst);
+  if (src.zone === dst.zone && src.x === dst.x && src.y === dst.y && src.i === dst.i) return { ok: true };
+  if (src.zone === 'bench' && dst.zone === 'field' && !b && fieldCount(run) >= fieldLimit(run.wave)) return { ok: false, msg: 'Sân đã đầy (' + fieldLimit(run.wave) + ' quân)' };
+  setAt(run, dst, a); setAt(run, src, b || null);
+  return { ok: true };
+}
+// Gộp sao: 3 quân cùng loại + cùng sao => 1 quân sao+1 (tối đa 3 sao). Lặp tới khi hết gộp được.
+function mergeOnce(run) {
+  for (const type of Object.keys(UNITS)) for (let star = 1; star < 3; star++) {
+    const list = listUnits(run).filter(e => e.unit.type === type && e.unit.star === star);
+    if (list.length < 3) continue;
+    const three = list.slice(0, 3), genes = [], shards = [];
+    three.forEach(e => { genes.push(...e.unit.genes); shards.push(...e.unit.shards); });
+    const nu = { uid: run.nextUid++, type, star: star + 1, genes: genes.slice(0, CONFIG.MAX_GENES_PER_UNIT), shards: shards.slice(0, CONFIG.MEMORY_MAX) };
+    three.forEach(e => setAt(run, e, null));
+    setAt(run, three[0], nu);   // đặt tại vị trí quân đầu tiên (ưu tiên quân ở sân)
+    return { type, star: star + 1 };
+  }
+  return null;
+}
+function mergeAll(run) { const out = []; let m; while ((m = mergeOnce(run))) out.push(m); return out; }
+function buyUnit(run, slot) {
+  const type = run.shop[slot];
+  if (!type) return { ok: false, msg: 'Slot trống' };
+  if (run.gold < ECONOMY.BUY_COST) return { ok: false, msg: 'Không đủ vàng' };
+  let bi = run.bench.indexOf(null);
+  if (bi < 0) {   // ghế đầy: chỉ mua được nếu gộp ngay (đã có 2 quân cùng loại sao 1)
+    if (listUnits(run).filter(e => e.unit.type === type && e.unit.star === 1).length < 2) return { ok: false, msg: 'Ghế dự bị đã đầy' };
+    bi = run.bench.length;   // ô tạm, sẽ bị gộp ngay
+  }
+  run.gold -= ECONOMY.BUY_COST; run.shop[slot] = null;
+  run.bench[bi] = makeRunUnit(run, type);
+  const merged = mergeAll(run);
+  while (run.bench.length > ECONOMY.BENCH_SIZE) run.bench.pop();
+  return { ok: true, merged };
+}
+function sellUnit(run, pos) {
+  const u = getAt(run, pos);
+  if (!u) return { ok: false, msg: 'Ô trống' };
+  const price = ECONOMY.SELL_UNIT[u.star];
+  run.gold += price; setAt(run, pos, null);
+  return { ok: true, price };
+}
+const enemyForWave = run => generateEnemy(run.wave, mulberry32(run.seed * 7919 + run.wave));
+const battleSeed = run => (run.seed * 31 + run.wave) >>> 0;
+function buildBattleState(run) {
+  const player = listUnits(run).filter(e => e.zone === 'field').map(e => ({ type: e.unit.type, star: e.unit.star, genes: e.unit.genes.slice(), shards: e.unit.shards.slice(), x: e.x, y: e.y }));
+  return { player, enemy: enemyForWave(run), ruleId: null };
+}
+// Áp kết quả trận vào run: thu nhập, chuỗi thắng, mất mạng, sang ải kế / kết thúc run.
+function applyBattleResult(run, res) {
+  const win = res.winner === 'P', wave = run.wave, boss = isBossWave(wave);
+  run.history.push({ wave, win, seconds: res.seconds });
+  if (win) { run.wins++; run.streak++; } else run.streak = 0;
+  const income = ECONOMY.INCOME_BASE + Math.floor(wave / 2);
+  const bonus = run.streak >= 5 ? ECONOMY.STREAK_BONUS[5] : run.streak >= 3 ? ECONOMY.STREAK_BONUS[3] : 0;
+  run.gold += income + bonus;
+  const loss = win ? 0 : (boss ? ECONOMY.BOSS_LIFE_LOSS : 1);
+  run.lives -= loss;
+  if (run.lives <= 0) run.over = 'lose';
+  else if (win && wave >= ECONOMY.TOTAL_WAVES) run.over = 'win';
+  else { if (wave < ECONOMY.TOTAL_WAVES) run.wave++; rollShop(run); }   // thua ải 15 còn mạng: đánh lại ải 15
+  return { win, wave, income, bonus, loss, streak: run.streak, over: run.over };
+}
+
 // ======================= DEMO (console) =======================
 // Mở index.html -> F12 -> demoBattle(1, 3)  hoặc demoBattle(seed, wave, ruleId, verbose)
 const DEMO_TEAM = [
