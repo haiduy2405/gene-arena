@@ -482,7 +482,8 @@ function simulateBattle(state, seed) {
 }
 
 // ======================= LOG =======================
-function formatLog(res, verbose) {
+// formatLogEntries: trả về [{t, ts, s}] để UI phát log theo tick; formatLog nối thành chuỗi.
+function formatLogEntries(res, verbose) {
   const L = {};
   for (const u of res.initial) L[u.id] = (u.side === 'P' ? 'Ta' : 'Địch') + '#' + u.id + ' ' + u.name + (u.star > 1 ? '★' + u.star : '');
   const nm = id => (id >= 0 ? L[id] : 'Luật thế giới');
@@ -514,10 +515,11 @@ function formatLog(res, verbose) {
       case 'atk': break;
       case 'end': s = 'KẾT THÚC: ' + (e.winner === 'P' ? 'TA THẮNG' : e.winner === 'E' ? 'ĐỊCH THẮNG' : 'HÒA (tính là thua)') + (e.timeout ? ' [hết 60s]' : ''); break;
     }
-    if (s !== null) out.push(ts + s);
+    if (s !== null) out.push({ t: e.t, ts, s });
   }
   return out;
 }
+function formatLog(res, verbose) { return formatLogEntries(res, verbose).map(x => x.ts + x.s); }
 
 // ======================= NHIỆM VỤ PHỤ =======================
 // checkObjective: đánh giá điều kiện theo obj.check.type trên result.stats (khai báo trong data.js).

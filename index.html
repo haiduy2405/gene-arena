@@ -4,14 +4,313 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GENE ARENA v0.1</title>
-<style>body{font-family:system-ui,sans-serif;background:#111;color:#ddd;padding:16px;line-height:1.5}code{background:#222;padding:2px 6px;border-radius:4px}</style>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0e1117;color:#dfe6f0;line-height:1.4}
+  #app{max-width:1180px;margin:0 auto;padding:10px}
+  h1{font-size:18px;margin:4px 0 8px;letter-spacing:1px}
+  h1 small{font-weight:400;color:#7d8aa0;font-size:12px;margin-left:6px}
+  .panel{background:#161b26;border:1px solid #232b3b;border-radius:10px;padding:10px;margin-bottom:10px}
+  .setup{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
+  .setup label{display:flex;flex-direction:column;font-size:11px;color:#8b98ad;gap:3px}
+  select,input,button{font:inherit;font-size:14px;background:#1d2433;color:#dfe6f0;border:1px solid #2c3750;border-radius:7px;padding:7px 10px}
+  input[type=number]{width:120px}
+  button{cursor:pointer}
+  button:hover{background:#26304a}
+  button.primary{background:#2f6df6;border-color:#2f6df6;color:#fff;font-weight:600}
+  button.on{background:#2f6df6;border-color:#2f6df6;color:#fff}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}
+  #stage{flex:1 1 640px;min-width:0;position:relative}
+  #hud{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;margin-bottom:6px;color:#aab6ca}
+  #hud b{color:#fff}
+  #rulebar{font-size:12px;color:#e8c26a;margin-bottom:6px;min-height:16px}
+  canvas{display:block;width:100%;aspect-ratio:8/5;border-radius:8px;background:#10151f;touch-action:manipulation}
+  #ctrl{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
+  #ctrl .sp{flex:1}
+  #result{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#0b0f17ee;border:2px solid #2f6df6;border-radius:12px;padding:16px 22px;text-align:center;display:none;min-width:220px}
+  #result.win{border-color:#3ecf6e}#result.lose{border-color:#ef4444}
+  #result h2{margin:0 0 6px;font-size:22px}
+  #result p{margin:3px 0;font-size:13px;color:#aab6ca}
+  #logwrap{flex:0 1 340px;min-width:260px;width:100%}
+  #logwrap.hidden{display:none}
+  #log{height:460px;overflow:auto;font:11px/1.45 ui-monospace,Consolas,monospace;background:#0b0f17;border:1px solid #232b3b;border-radius:8px;padding:6px;white-space:pre-wrap;word-break:break-word}
+  #log div{padding:1px 0;border-bottom:1px solid #121826}
+  #log .g{color:#f1c453}#log .d{color:#ff7a7a}#log .h{color:#6fe39a}#log .e{color:#fff;font-weight:700}#log .x{color:#8b98ad}
+  .hint{font-size:11px;color:#6d7a90;margin-top:6px}
+  @media(max-width:700px){#log{height:240px}#logwrap{flex:1 1 100%}}
+</style>
 </head>
 <body>
-<h1>GENE ARENA v0.1 — M1</h1>
-<p>Chưa có UI. Mở Console (F12) rồi gõ:</p>
-<p><code>demoBattle(1, 3)</code> — seed 1, ải 3</p>
-<p><code>demoBattle(5, 10, 'no_xac', true)</code> — seed 5, ải 10, luật Nổ Xác, log chi tiết</p>
+<div id="app">
+  <h1>GENE ARENA <small>v0.1 · M2 · trận thử (đội cố định, shop có ở M3)</small></h1>
+
+  <div class="panel setup">
+    <label>Ải<select id="selWave"></select></label>
+    <label>Luật thế giới<select id="selRule"></select></label>
+    <label>Seed<input id="inSeed" type="number" value="1"></label>
+    <button id="btnDice" title="Seed ngẫu nhiên">🎲</button>
+    <button id="btnRun" class="primary">▶ Chạy trận</button>
+  </div>
+
+  <div class="row">
+    <div id="stage" class="panel">
+      <div id="hud">
+        <span>⏱ <b id="hTime">0.0</b>s / 60s</span>
+        <span>Ta <b id="hP">-</b></span>
+        <span>Địch <b id="hE">-</b></span>
+        <span>Seed <b id="hSeed">-</b></span>
+      </div>
+      <div id="rulebar"></div>
+      <canvas id="c"></canvas>
+      <div id="result"><h2 id="rTitle"></h2><p id="rLine1"></p><p id="rLine2"></p><button id="btnRe" class="primary">↻ Phát lại</button></div>
+      <div id="ctrl">
+        <button id="bPause">⏸ Tạm dừng</button>
+        <button data-sp="1" class="spd on">x1</button>
+        <button data-sp="2" class="spd">x2</button>
+        <button data-sp="4" class="spd">x4</button>
+        <button id="bSkip">⏭ Bỏ qua</button>
+        <button id="bReplay">↻ Phát lại</button>
+        <span class="sp"></span>
+        <button id="bLog" class="on">Log</button>
+      </div>
+      <div class="hint">Phím: Space = tạm dừng · 1/2/4 = tốc độ · S = bỏ qua · R = phát lại. Chạy lại cùng seed ra kết quả y hệt.</div>
+    </div>
+    <div id="logwrap" class="panel"><div id="log"></div></div>
+  </div>
+</div>
+
 <script src="data.js"></script>
 <script src="game.js"></script>
+<script>
+// ======================= RENDER / PHÁT LẠI (M2) =======================
+// Render chỉ PHÁT LẠI danh sách events do simulateBattle trả về; không chứa logic chiến đấu.
+// Mọi event mang giá trị tuyệt đối (hp, sh, x, y) nên áp lại nhiều lần vẫn đúng.
+const $ = id => document.getElementById(id);
+const canvas = $('c'), ctx = canvas.getContext('2d');
+const TYPE_ICON = { tank: '🛡️', fighter: '⚔️', archer: '🏹', mage: '🔮', healer: '💚', assassin: '🗡️' };
+const COL_P = '#2f6df6', COL_E = '#d9443f';
+let R = null;            // trạng thái phát lại
+let speed = 1;           // x1 / x2 / x4
+let showLog = true;
+let lastT = performance.now();
+
+// ---------- Khởi tạo form ----------
+(function initForm() {
+  const sw = $('selWave');
+  for (let w = 1; w <= ECONOMY.TOTAL_WAVES; w++) {
+    const o = document.createElement('option'); o.value = w;
+    o.textContent = 'Ải ' + w + (ECONOMY.BOSS_WAVES.includes(w) ? ' (Boss)' : ''); sw.appendChild(o);
+  }
+  const sr = $('selRule');
+  sr.innerHTML = '<option value="">Không có luật</option>' + RULES.map(r => '<option value="' + r.id + '">' + r.name + '</option>').join('');
+})();
+
+// ---------- Chạy trận ----------
+function runBattle() {
+  const wave = +$('selWave').value, seed = (parseInt($('inSeed').value, 10) || 1) >>> 0, ruleId = $('selRule').value || null;
+  const enemy = generateEnemy(wave, mulberry32(seed * 7919 + wave));
+  const res = simulateBattle({ player: DEMO_TEAM, enemy, ruleId }, seed);   // thuần logic
+  res.wave = wave;
+  startReplay(res);
+}
+function startReplay(res) {
+  R = { res, idx: 0, tick: 0, paused: false, done: false, units: {}, fx: [], beams: [], entries: formatLogEntries(res, false), logIdx: 0 };
+  for (const u of res.initial) {
+    R.units[u.id] = { id: u.id, side: u.side, type: u.type, star: u.star, name: u.name, x: u.x, y: u.y, px: u.x, py: u.y,
+      hp: u.hp, maxHP: u.maxHP, sh: u.shield, alive: true, fade: 1, hit: 0, burnUntil: 0, slowUntil: 0, stunUntil: 0 };
+  }
+  $('log').innerHTML = '';
+  $('result').style.display = 'none';
+  $('hSeed').textContent = res.seed;
+  const rl = res.ruleId ? RULES_BY_ID[res.ruleId] : null;
+  $('rulebar').textContent = rl ? '⚠ Luật: ' + rl.name + ' — ' + rl.desc : '';
+  $('bPause').textContent = '⏸ Tạm dừng';
+  advance(0, true);
+}
+
+// ---------- Áp event ----------
+function advance(target, anim) {
+  const ev = R.res.events;
+  while (R.idx < ev.length && ev[R.idx].t <= target) applyEvent(ev[R.idx++], anim);
+  appendLogs(target);
+  if (R.idx >= ev.length) R.done = true;
+}
+function addFx(id, text, color, size) {
+  const u = R.units[id]; if (!u) return;
+  let n = 0; for (const f of R.fx) if (f.id === id && f.age < 0.5) n++;
+  R.fx.push({ id, text, color, size: size || 1, age: 0, off: n * 13, jx: (Math.random() - 0.5) * 0.3 });
+}
+function applyEvent(e, anim) {
+  const U = R.units;
+  switch (e.k) {
+    case 'gene': if (anim && U[e.id]) addFx(e.id, '✦ ' + (GENE_BY_ID[e.gene] ? GENE_BY_ID[e.gene].name : '?'), '#f1c453', 0.85); break;
+    case 'atk': {
+      const s = U[e.src], d = U[e.dst]; if (!s || !d) break;
+      if (anim && UNITS[s.type].range > 1) R.beams.push({ sx: s.x, sy: s.y, dx: d.x, dy: d.y, age: 0, c: s.type === 'mage' ? '#c08bff' : '#ffe08a' });
+      break;
+    }
+    case 'dmg': {
+      const d = U[e.dst]; if (!d) break;
+      d.hp = e.hp; d.sh = e.sh; d.hit = 1;
+      if (anim) {
+        const txt = e.amt > 0 ? '-' + e.amt : (e.abs ? '🛡' + e.abs : '0');
+        addFx(e.dst, txt, e.crit ? '#ffd23f' : (e.kind === 'burn' ? '#ff9a3d' : '#ff6b6b'), e.crit ? 1.35 : 1);
+      }
+      break;
+    }
+    case 'heal': { const d = U[e.dst]; if (!d) break; d.hp = e.hp; if (anim) addFx(e.dst, '+' + e.amt, '#5be28f', 1); break; }
+    case 'shield': { const d = U[e.dst]; if (!d) break; d.sh = e.sh; if (anim) addFx(e.dst, '◈', '#6fd3ff', 0.9); break; }
+    case 'status': {
+      const d = U[e.dst]; if (!d) break;
+      const until = e.t + Math.round(e.sec * CONFIG.TICKS_PER_SEC);
+      if (e.st === 'burn') d.burnUntil = Math.max(d.burnUntil, until);
+      else if (e.st === 'slow') d.slowUntil = Math.max(d.slowUntil, until);
+      else if (e.st === 'stun') d.stunUntil = Math.max(d.stunUntil, until);
+      break;
+    }
+    case 'move': { const u = U[e.id]; if (!u) break; u.x = e.x; u.y = e.y; if (e.jump || !anim) { u.px = e.x; u.py = e.y; if (anim) addFx(e.id, '⤴', '#fff', 1); } break; }
+    case 'death': { const u = U[e.id]; if (!u) break; u.alive = false; u.hp = 0; if (!anim) u.fade = 0; break; }
+    case 'revive': { const u = U[e.id]; if (!u) break; u.alive = true; u.fade = 1; u.hp = e.hp; if (anim) addFx(e.id, '♻', '#6fe39a', 1.2); break; }
+    case 'stat': { const u = U[e.id]; if (!u) break; u.maxHP = e.maxHP; u.hp = e.hp; break; }
+    case 'end': showResult(); break;
+  }
+}
+
+// ---------- Log ----------
+function appendLogs(upTo) {
+  const box = $('log'), frag = document.createDocumentFragment(), near = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+  let n = 0;
+  while (R.logIdx < R.entries.length && R.entries[R.logIdx].t <= upTo) {
+    const en = R.entries[R.logIdx++], s = en.s, d = document.createElement('div');
+    d.textContent = en.ts + s;
+    d.className = s.startsWith('KẾT') || s.startsWith('BẮT') ? 'e' : s.startsWith('✦') || s.startsWith('  [') ? 'g' : s.startsWith('✖') ? 'd' : s.startsWith('  +') ? 'h' : /^(  ~|  ◈)/.test(s) ? 'x' : '';
+    frag.appendChild(d); n++;
+  }
+  if (!n) return;
+  box.appendChild(frag);
+  while (box.childNodes.length > 2500) box.removeChild(box.firstChild);
+  if (near || R.done) box.scrollTop = box.scrollHeight;
+}
+
+// ---------- Kết quả ----------
+function showResult() {
+  const r = R.res, el = $('result'), win = r.winner === 'P';
+  el.className = win ? 'win' : 'lose'; el.style.display = 'block';
+  $('rTitle').textContent = win ? '🏆 TA THẮNG' : r.winner === 'draw' ? '⏱ HÒA (tính là thua)' : '💀 ĐỊCH THẮNG';
+  $('rLine1').textContent = 'Thời gian ' + r.seconds.toFixed(1) + 's · quân ta chết ' + r.stats.deaths.P + ' · địch chết ' + r.stats.deaths.E;
+  $('rLine2').textContent = 'Sát thương gene: ' + r.stats.damageByGene.P + ' · hồi máu đội: ' + r.stats.healTotal.P;
+}
+
+// ---------- Điều khiển ----------
+function setSpeed(s) { speed = s; document.querySelectorAll('.spd').forEach(b => b.classList.toggle('on', +b.dataset.sp === s)); }
+document.querySelectorAll('.spd').forEach(b => b.onclick = () => setSpeed(+b.dataset.sp));
+function togglePause() { if (!R) return; R.paused = !R.paused; $('bPause').textContent = R.paused ? '▶ Tiếp tục' : '⏸ Tạm dừng'; }
+function skip() {
+  if (!R || R.done) return;
+  R.tick = R.res.ticks + 1; R.fx = []; R.beams = [];
+  advance(Infinity, false);
+}
+function replay() { if (R) startReplay(R.res); }
+$('bPause').onclick = togglePause; $('bSkip').onclick = skip; $('bReplay').onclick = replay; $('btnRe').onclick = replay;
+$('btnRun').onclick = runBattle;
+$('btnDice').onclick = () => { $('inSeed').value = Math.floor(Math.random() * 1e6); };
+$('bLog').onclick = () => { showLog = !showLog; $('logwrap').classList.toggle('hidden', !showLog); $('bLog').classList.toggle('on', showLog); resize(); };
+window.addEventListener('keydown', e => {
+  if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+  if (e.code === 'Space') { e.preventDefault(); togglePause(); }
+  else if (e.key === '1') setSpeed(1); else if (e.key === '2') setSpeed(2); else if (e.key === '4') setSpeed(4);
+  else if (e.key === 's' || e.key === 'S') skip(); else if (e.key === 'r' || e.key === 'R') replay();
+});
+
+// ---------- Vẽ ----------
+function resize() {
+  const w = canvas.clientWidth || 640, dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(w * 5 / 8 * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+
+function hpColor(r) { return r > 0.6 ? '#3ecf6e' : r > 0.3 ? '#e8c43a' : '#ef4444'; }
+
+function draw(dt) {
+  const W = canvas.clientWidth || 640, cs = W / 8, H = cs * 5;
+  ctx.clearRect(0, 0, W, H);
+  const rule = R && R.res.ruleId ? RULES_BY_ID[R.res.ruleId].mods : null;
+  for (let y = 0; y < 5; y++) for (let x = 0; x < 8; x++) {
+    ctx.fillStyle = x < 4 ? ((x + y) % 2 ? '#15213a' : '#182646') : ((x + y) % 2 ? '#2a1a20' : '#321e26');
+    ctx.fillRect(x * cs, y * cs, cs, cs);
+    if (rule && rule.rows && !rule.rows.includes(y)) { ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(x * cs, y * cs, cs, cs); }
+  }
+  ctx.strokeStyle = '#ffffff22'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(4 * cs, 0); ctx.lineTo(4 * cs, H); ctx.stroke();
+  if (!R) { ctx.fillStyle = '#6d7a90'; ctx.font = '15px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Chọn ải / seed rồi bấm "Chạy trận"', W / 2, H / 2); return; }
+
+  const tick = R.tick, units = Object.values(R.units).sort((a, b) => a.py - b.py || a.id - b.id);
+  for (const u of units) {   // trượt mượt tới ô đích
+    const k = Math.min(1, dt * 14 * Math.max(1, speed));
+    u.px += (u.x - u.px) * k; u.py += (u.y - u.py) * k;
+    if (!u.alive) u.fade = Math.max(0, u.fade - dt * 2.5 * speed);
+    u.hit = Math.max(0, u.hit - dt * 7);
+  }
+  for (const u of units) {
+    if (u.fade <= 0) continue;
+    const cx = (u.px + 0.5) * cs, cy = (u.py + 0.5) * cs, r = cs * 0.33;
+    ctx.globalAlpha = u.fade;
+    ctx.fillStyle = u.side === 'P' ? COL_P : COL_E;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = u.stunUntil > tick ? '#ffe14d' : '#ffffff55'; ctx.stroke();
+    if (u.hit > 0) { ctx.fillStyle = 'rgba(255,255,255,' + (u.hit * 0.6) + ')'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill(); }
+    ctx.font = Math.round(cs * 0.34) + 'px system-ui,"Segoe UI Emoji","Noto Color Emoji"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff'; ctx.fillText(TYPE_ICON[u.type] || '?', cx, cy + 1);
+    if (u.star > 1) { ctx.font = 'bold ' + Math.round(cs * 0.16) + 'px system-ui'; ctx.fillStyle = '#ffd23f'; ctx.fillText('★'.repeat(u.star), cx, cy + r + cs * 0.1); }
+    // thanh máu + giáp
+    const bw = cs * 0.74, bh = Math.max(4, cs * 0.075), bx = cx - bw / 2, by = cy - r - bh - 3;
+    ctx.fillStyle = '#000a'; ctx.fillRect(bx, by, bw, bh);
+    ctx.fillStyle = hpColor(u.hp / u.maxHP); ctx.fillRect(bx, by, bw * Math.max(0, Math.min(1, u.hp / u.maxHP)), bh);
+    if (u.sh > 0) { ctx.fillStyle = '#6fd3ff'; ctx.fillRect(bx, by - 3, bw * Math.min(1, u.sh / u.maxHP), 3); }
+    // icon trạng thái
+    let ic = ''; if (u.burnUntil > tick) ic += '🔥'; if (u.slowUntil > tick) ic += '🐌'; if (u.stunUntil > tick) ic += '💫';
+    if (ic) { ctx.font = Math.round(cs * 0.17) + 'px system-ui,"Noto Color Emoji"'; ctx.fillStyle = '#fff'; ctx.fillText(ic, cx, by - 9); }
+    ctx.globalAlpha = 1;
+  }
+  // tia bắn
+  for (let i = R.beams.length - 1; i >= 0; i--) {
+    const b = R.beams[i]; b.age += dt * speed;
+    if (b.age > 0.14) { R.beams.splice(i, 1); continue; }
+    ctx.globalAlpha = 1 - b.age / 0.14; ctx.strokeStyle = b.c; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo((b.sx + 0.5) * cs, (b.sy + 0.5) * cs); ctx.lineTo((b.dx + 0.5) * cs, (b.dy + 0.5) * cs); ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  // chữ bay (sát thương / tên gene)
+  const life = 0.95;
+  for (let i = R.fx.length - 1; i >= 0; i--) {
+    const f = R.fx[i]; f.age += dt * Math.min(speed, 2.5);
+    if (f.age > life) { R.fx.splice(i, 1); continue; }
+    const u = R.units[f.id], t = f.age / life;
+    const x = (u.px + 0.5 + f.jx) * cs, y = (u.py + 0.5) * cs - cs * 0.55 - t * cs * 0.55 - f.off;
+    ctx.globalAlpha = 1 - t * t; ctx.font = 'bold ' + Math.round(cs * 0.2 * f.size) + 'px system-ui,"Noto Color Emoji"';
+    ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = '#000c'; ctx.strokeText(f.text, x, y);
+    ctx.fillStyle = f.color; ctx.fillText(f.text, x, y); ctx.globalAlpha = 1;
+  }
+}
+
+function updateHud() {
+  if (!R) return;
+  $('hTime').textContent = Math.min(R.tick / CONFIG.TICKS_PER_SEC, R.res.seconds).toFixed(1);
+  let p = 0, pt = 0, e = 0, et = 0;
+  for (const u of Object.values(R.units)) { if (u.side === 'P') { pt++; if (u.alive) p++; } else { et++; if (u.alive) e++; } }
+  $('hP').textContent = p + '/' + pt; $('hE').textContent = e + '/' + et;
+}
+
+function frame(now) {
+  const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+  if (R && !R.paused && !R.done) {
+    R.tick += dt * CONFIG.TICKS_PER_SEC * speed;   // tick cố định 50ms game; render chỉ phát lại theo tốc độ
+    advance(R.tick, true);
+  }
+  draw(dt); updateHud();
+  requestAnimationFrame(frame);
+}
+resize();
+requestAnimationFrame(frame);
+</script>
 </body>
 </html>
