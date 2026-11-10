@@ -451,7 +451,7 @@ function renderShop() {
 $('btnReroll').onclick = () => { const r = rerollShop(run); toast(r.ok ? '' : r.msg); renderPrep(); };
 
 function renderEnemy() {
-  const defs = enemyForWave(run), mult = 1 + ENEMY.SCALE_PER_WAVE * (run.wave - 1);
+  const defs = enemyForWave(run), mult = defs[0].mult;
   $('enemyTtl').textContent = 'Địch ải ' + run.wave + (isBossWave(run.wave) ? ' (BOSS)' : '');
   $('enemyNote').textContent = defs.length + ' quân · chỉ số ×' + mult.toFixed(2);
   const box = $('enemyPrev'); box.innerHTML = '';

@@ -544,18 +544,18 @@ function rollGene(rng, rarity, excludeIds) {
 }
 function generateEnemy(wave, rng) {
   const boss = ECONOMY.BOSS_WAVES.includes(wave);
-  const count = Math.min(ENEMY.BASE_COUNT + Math.ceil(wave / 2), ENEMY.MAX_COUNT) + (boss ? 1 : 0);
+  const count = Math.max(1, Math.min(ENEMY.BASE_COUNT + Math.ceil(wave / 2), ENEMY.MAX_COUNT) + (boss ? ENEMY.BOSS_COUNT_BONUS : 0) + (ENEMY.COUNT_ADJUST[wave] || 0));
   const types = ['tank'];                                          // luôn có >= 1 Tank
   if (count >= 4) types.push(ENEMY.RANGED_TYPES[Math.floor(rng() * ENEMY.RANGED_TYPES.length)]);   // >= 1 đánh xa
   const keys = Object.keys(ENEMY.TYPE_WEIGHTS);
   while (types.length < count) types.push(pickWeighted(rng, keys, k => ENEMY.TYPE_WEIGHTS[k]));
-  const mult = 1 + ENEMY.SCALE_PER_WAVE * (wave - 1);
+  const mult = (1 + ENEMY.SCALE_PER_WAVE * (wave - 1)) * (boss ? ENEMY.BOSS_MULT : 1) * (ENEMY.MULT_ADJUST[wave] || 1);
   const defs = types.map(type => {
     let star = 1;
     if (wave >= 11) star = rng() < ENEMY.STAR3_CHANCE ? 3 : 2;
     else if (wave >= 6) star = rng() < ENEMY.STAR2_CHANCE ? 2 : 1;
     const genes = [];
-    if (boss) genes.push(rollGene(rng, 'rare', genes));            // boss: mọi quân 1 Rare
+    if (boss) { if (rng() < ENEMY.BOSS_RARE_FRAC) genes.push(rollGene(rng, 'rare', genes)); }            // boss: mọi quân 1 Rare
     else if (wave >= 8) {
       const n = 1 + Math.floor(rng() * 2);                         // 1-2 gene, cho phép Rare
       for (let i = 0; i < n; i++) genes.push(rollGene(rng, rng() < ENEMY.RARE_CHANCE_W8 ? 'rare' : 'common', genes));

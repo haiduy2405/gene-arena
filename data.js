@@ -40,6 +40,9 @@ const GENE_RARITY_BY_WAVE = [
 // Sinh địch (section 10)
 const ENEMY = {
   BASE_COUNT: 2, MAX_COUNT: 8, SCALE_PER_WAVE: 0.12,
+  COUNT_ADJUST: {},                      // chỉnh số quân theo ải, vd {1:-1}
+  BOSS_COUNT_BONUS: 0, BOSS_MULT: 1, BOSS_RARE_FRAC: 1,   // boss: +quân (gốc 1, hạ về 0: ải 5 bot thắng 17%->44%), nhân chỉ số, tỉ lệ quân có gene Rare
+  MULT_ADJUST: { 1: 0.85 },                       // nhân chỉ số thêm theo ải, ải 1 nhẹ tay (bot ngẫu nhiên: ~30% -> ~68%)
   TYPE_WEIGHTS: { tank: 3, fighter: 3, archer: 2, mage: 2, healer: 1, assassin: 1 },
   RANGED_TYPES: ['archer', 'mage'],      // "đánh xa" để đảm bảo khi >= 4 quân
   STAR2_CHANCE: 0.4,                     // ải 6-10: 40% quân sao 2
